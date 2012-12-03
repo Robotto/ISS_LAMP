@@ -1,7 +1,9 @@
 ISS_LAMP
 ========
 
-My take on the ISS lamp based on the arduino uno hardware, with an ethernet shield.
+My take on the ISS lamp based on the arduino uno hardware, with a POE enabled ethernet shield.
+
+The idea is to have a "stand-alone" unit which only needs the POE injected CAT5e cable to work.
 
 The 'client' is an arduino (uno) which uses an NTP lookup and a UDP connection to get data about the International Space Station,
 which is parsed (upon request) from heavens-above.com by the 'Server' side python script
