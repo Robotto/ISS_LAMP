@@ -1,16 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
-from datetime import datetime, date, timedelta
-from time import strftime, strptime, mktime, struct_time, time, ctime
-#from getopt import getopt
-import os, sys, envoy
-
-
+from time import time, ctime
 import socket
 from IPy import IP
 incomingPort = 1337
 remotePort = 1337
+
 # A UDP server listening for packets on port 1337:
 UDPSock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
 
