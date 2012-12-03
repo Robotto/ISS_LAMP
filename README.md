@@ -6,7 +6,7 @@ My take on the ISS lamp based on the arduino uno hardware, with an ethernet shie
 The 'client' is an arduino (uno) which uses an NTP lookup and a UDP connection to get data about the International Space Station,
 which is parsed (upon request) from heavens-above.com by the 'Server' side python script
 
-Both visible and invisible passes are parsed, visible passes have priority.
+Both visible and invisible passes are parsed, visible passes have priority. (visible passes are also listed in the "all passes" table, this is accounted for)
 
 The server side script is meant to be running in eg. a screen session on a linux machine.
 
