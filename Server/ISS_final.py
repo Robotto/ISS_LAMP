@@ -87,7 +87,8 @@ for o, a in optlist:
     print usage
     sys.exit()
 
-
+#http://heavens-above.com/PassSummary.aspx?showAll=t&satid=25544&lat=56.156361&lng=10.188631&alt=40&tz=CET
+#http://heavens-above.com/PassSummary.aspx?showAll=f&satid=25544&lat=56.156361&lng=10.188631&alt=40&tz=CET
 def ISS_PASS_GET():
   # Heavens Above URLs and login information.
   issAllURL = 'http://heavens-above.com/PassSummary.aspx?showAll=t&satid=25544&lat=%s&lng=%s&alt=%s&tz=CET' %(latitude, longtitude, elevation)
@@ -167,8 +168,9 @@ def ISS_PASS_GET():
   while A_startUnix<currenttime:
 
   #All passes:
-    (A_start, A_max, A_end, A_loc1, A_loc2, A_loc3, A_startUnix, A_maxUnix, A_endUnix) = parseRow(allRows[rowCount], 0)
-  
+    try: (A_start, A_max, A_end, A_loc1, A_loc2, A_loc3, A_startUnix, A_maxUnix, A_endUnix) = parseRow(allRows[rowCount], 0)
+    except: A_startUnix=currenttime+1
+    #ADD SOME DEFAULT VALUES FOR NO PASSES!!!
 
     #check for any visible passes.
     try: (V_start, V_max, V_end, V_loc1, V_loc2, V_loc3, V_startUnix, V_maxUnix, V_endUnix, V_mag) = parseRow(visibleRows[rowCount], 1)
@@ -191,7 +193,7 @@ def ISS_PASS_GET():
 
 
 
-#UDP HALLØJ:  
+#UDP HALLÃ˜J:  
 
 import socket
 from IPy import IP
