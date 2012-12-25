@@ -169,7 +169,16 @@ def ISS_PASS_GET():
 
   #All passes:
     try: (A_start, A_max, A_end, A_loc1, A_loc2, A_loc3, A_startUnix, A_maxUnix, A_endUnix) = parseRow(allRows[rowCount], 0)
-    except: A_startUnix=currenttime+1 A_start=0 A_max=0 A_end=0 A_loc1=0 A_loc2=0 A_loc3=0 A_startUnix=0 A_maxUnix=0 A_endUnix=0
+    except: A_startUnix=currenttime+1 
+            A_start=0
+            A_max=0
+            A_end=0
+            A_loc1=0
+            A_loc2=0
+            A_loc3=0
+            A_startUnix=0
+            A_maxUnix=0
+            A_endUnix=0
     #ADD SOME DEFAULT VALUES FOR NO PASSES!!! 
 
     #check for any visible passes.
