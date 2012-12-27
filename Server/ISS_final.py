@@ -110,7 +110,8 @@ def ISS_PASS_GET():
   # it in a well-formed HTML skeleton. If there is no table of ISS data, create
   # an empty table.
   try:
-      allTable = allHtml.split(r'<table id="ctl00_ContentPlaceHolder1_tblPasses"', 1)[1]
+      #allTable = allHtml.split(r'<table id="ctl00_ContentPlaceHolder1_tblPasses"', 1)[1]
+      allTable = allHtml.split(r'<table id="standardTable"', 1)[1]
       allTable = allTable.split(r'>', 1)[1]
       allTable = allTable.split(r'</table>', 1)[0]
   except IndexError:
@@ -127,7 +128,8 @@ def ISS_PASS_GET():
   </html>''' % allTable
 
   try:
-      visibleTable = visibleHtml.split(r'<table id="ctl00_ContentPlaceHolder1_tblPasses"', 1)[1]
+      #visibleTable = visibleHtml.split(r'<table id="ctl00_ContentPlaceHolder1_tblPasses"', 1)[1]
+      allTable = visibleHtml.split(r'<table id="standardTable"', 1)[1]
       visibleTable = visibleTable.split(r'>', 1)[1]
       visibleTable = visibleTable.split(r'</table>', 1)[0]
   except IndexError:
