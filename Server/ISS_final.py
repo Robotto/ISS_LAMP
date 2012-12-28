@@ -30,26 +30,17 @@ def parseRow(row, isvisible):
   dStr = cols[0].a.string
   if isvisible:
     mag = float(cols[1].string)
-    t1Str = ':'.join(cols[2].string.split(':'))
-    t2Str = ':'.join(cols[5].string.split(':'))
-    t3Str = ':'.join(cols[8].string.split(':'))
-    alt1 = cols[3].string.replace(u'\xB0', '')
-    az1 = cols[4].string
-    alt2 = cols[6].string.replace(u'\xB0', '')
-    az2 = cols[7].string
-    alt3 = cols[9].string.replace(u'\xB0', '')
-    az3 = cols[10].string
-  else:
-    t1Str = ':'.join(cols[1].string.split(':'))
-    t2Str = ':'.join(cols[4].string.split(':'))
-    t3Str = ':'.join(cols[7].string.split(':'))
-    alt1 = cols[2].string.replace(u'\xB0', '')
-    az1 = cols[3].string
-    alt2 = cols[5].string.replace(u'\xB0', '')
-    az2 = cols[6].string
-    alt3 = cols[8].string.replace(u'\xB0', '')
-    az3 = cols[9].string
-
+  
+  t1Str = ':'.join(cols[2].string.split(':'))
+  t2Str = ':'.join(cols[5].string.split(':'))
+  t3Str = ':'.join(cols[8].string.split(':'))
+  alt1 = cols[3].string.replace(u'\xB0', '')
+  az1 = cols[4].string
+  alt2 = cols[6].string.replace(u'\xB0', '')
+  az2 = cols[7].string
+  alt3 = cols[9].string.replace(u'\xB0', '')
+  az3 = cols[10].string
+  
   loc1 = '%s-%s' % (az1, alt1)
   loc2 = '%s-%s' % (az2, alt2)
   loc3 = '%s-%s' % (az3, alt3)
@@ -111,7 +102,7 @@ def ISS_PASS_GET():
   # an empty table.
   try:
       #allTable = allHtml.split(r'<table id="ctl00_ContentPlaceHolder1_tblPasses"', 1)[1]
-      allTable = allHtml.split(r'<table id="standardTable"', 1)[1]
+      allTable = allHtml.split(r'<tr class="clickableRow lightrow"', 1)[1]
       allTable = allTable.split(r'>', 1)[1]
       allTable = allTable.split(r'</table>', 1)[0]
   except IndexError:
@@ -129,7 +120,7 @@ def ISS_PASS_GET():
 
   try:
       #visibleTable = visibleHtml.split(r'<table id="ctl00_ContentPlaceHolder1_tblPasses"', 1)[1]
-      allTable = visibleHtml.split(r'<table id="standardTable"', 1)[1]
+      visibleTable = visibleHtml.split(r'<tr class="clickableRow lightrow"', 1)[1]
       visibleTable = visibleTable.split(r'>', 1)[1]
       visibleTable = visibleTable.split(r'</table>', 1)[0]
   except IndexError:
