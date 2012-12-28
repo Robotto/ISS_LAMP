@@ -66,12 +66,17 @@ int A_0 = A4;
 int WR = A5;
 byte customcharposition = 0xa0;
 unsigned char VFD_data_pins[8];
+int temp_vfd_position = 0;
 
 //ISS STUFF:
 boolean passVisible;
 boolean keepcamlandcarryon = true;
 boolean firstWarningGiven = false;
 boolean passInProgress = false;
+boolean ongoingPassEndInfoPrint = true;
+boolean ongoingPassMaxInfoPrint = true;
+
+
 unsigned long currentEpoch;
 unsigned long passStartEpoch;
 unsigned long passMaxEpoch;
@@ -244,6 +249,8 @@ LLLLLLLLLLLLLLLLLLLLLLLL   ooooooooooo      ooooooooooo    p::::::pppppppp
 void loop()
 {
 
+
+
 //VFDdancingSmileyForever();
   
   if(millis()>lastmillis+1000) //a second (or more) has passed
@@ -267,7 +274,24 @@ void loop()
   standalone_seconds=0;
   }
   
-
+/*
+  SSSSSSSSSSSSSSS      tttt                                    tttt                                                                                          hhhhhhh               iiii                                               
+ SS:::::::::::::::S  ttt:::t                                 ttt:::t                                                                                          h:::::h              i::::i                                              
+S:::::SSSSSS::::::S  t:::::t                                 t:::::t                                                                                          h:::::h               iiii                                               
+S:::::S     SSSSSSS  t:::::t                                 t:::::t                                                                                          h:::::h                                                                  
+S:::::S        ttttttt:::::ttttttt      aaaaaaaaaaaaa  ttttttt:::::ttttttt        eeeeeeeeeeee       mmmmmmm    mmmmmmm     aaaaaaaaaaaaa      cccccccccccccccch::::h hhhhh       iiiiiiinnnn  nnnnnnnn        eeeeeeeeeeee            
+S:::::S        t:::::::::::::::::t      a::::::::::::a t:::::::::::::::::t      ee::::::::::::ee   mm:::::::m  m:::::::mm   a::::::::::::a   cc:::::::::::::::ch::::hh:::::hhh    i:::::in:::nn::::::::nn    ee::::::::::::ee   :::::: 
+ S::::SSSS     t:::::::::::::::::t      aaaaaaaaa:::::at:::::::::::::::::t     e::::::eeeee:::::eem::::::::::mm::::::::::m  aaaaaaaaa:::::a c:::::::::::::::::ch::::::::::::::hh   i::::in::::::::::::::nn  e::::::eeeee:::::ee :::::: 
+  SS::::::SSSSStttttt:::::::tttttt               a::::atttttt:::::::tttttt    e::::::e     e:::::em::::::::::::::::::::::m           a::::ac:::::::cccccc:::::ch:::::::hhh::::::h  i::::inn:::::::::::::::ne::::::e     e:::::e :::::: 
+    SSS::::::::SS    t:::::t              aaaaaaa:::::a      t:::::t          e:::::::eeeee::::::em:::::mmm::::::mmm:::::m    aaaaaaa:::::ac::::::c     ccccccch::::::h   h::::::h i::::i  n:::::nnnn:::::ne:::::::eeeee::::::e        
+       SSSSSS::::S   t:::::t            aa::::::::::::a      t:::::t          e:::::::::::::::::e m::::m   m::::m   m::::m  aa::::::::::::ac:::::c             h:::::h     h:::::h i::::i  n::::n    n::::ne:::::::::::::::::e         
+            S:::::S  t:::::t           a::::aaaa::::::a      t:::::t          e::::::eeeeeeeeeee  m::::m   m::::m   m::::m a::::aaaa::::::ac:::::c             h:::::h     h:::::h i::::i  n::::n    n::::ne::::::eeeeeeeeeee          
+            S:::::S  t:::::t    tttttta::::a    a:::::a      t:::::t    tttttte:::::::e           m::::m   m::::m   m::::ma::::a    a:::::ac::::::c     ccccccch:::::h     h:::::h i::::i  n::::n    n::::ne:::::::e            :::::: 
+SSSSSSS     S:::::S  t::::::tttt:::::ta::::a    a:::::a      t::::::tttt:::::te::::::::e          m::::m   m::::m   m::::ma::::a    a:::::ac:::::::cccccc:::::ch:::::h     h:::::hi::::::i n::::n    n::::ne::::::::e           :::::: 
+S::::::SSSSSS:::::S  tt::::::::::::::ta:::::aaaa::::::a      tt::::::::::::::t e::::::::eeeeeeee  m::::m   m::::m   m::::ma:::::aaaa::::::a c:::::::::::::::::ch:::::h     h:::::hi::::::i n::::n    n::::n e::::::::eeeeeeee   :::::: 
+S:::::::::::::::SS     tt:::::::::::tt a::::::::::aa:::a       tt:::::::::::tt  ee:::::::::::::e  m::::m   m::::m   m::::m a::::::::::aa:::a cc:::::::::::::::ch:::::h     h:::::hi::::::i n::::n    n::::n  ee:::::::::::::e          
+ SSSSSSSSSSSSSSS         ttttttttttt    aaaaaaaaaa  aaaa         ttttttttttt      eeeeeeeeeeeeee  mmmmmm   mmmmmm   mmmmmm  aaaaaaaaaa  aaaa   cccccccccccccccchhhhhhh     hhhhhhhiiiiiiii nnnnnn    nnnnnn    eeeeeeeeeeeeee    
+*/
   if (currentEpoch>=passEndEpoch) //PASS END!
   {
     VFDclear();
@@ -280,24 +304,83 @@ void loop()
     keepcamlandcarryon=true;
     firstWarningGiven=false;
     passInProgress=false;
+    ongoingPassEndInfoPrint=true;
+    ongoingPassMaxInfoPrint=true;
   }
   
+  else if (passInProgress)
+  {
+    if((currentEpoch<=passMaxEpoch) && passVisible)
+        {
+      
+        if(ongoingPassMaxInfoPrint)
+          {
+          VFDclear();
+          VFDstring("VISIBLE PASS MAX @");
+          VFDstring(passMaxDir); 
+          VFDstring(" in T-");
+          temp_vfd_position=22+passMaxDir.length();
+          ongoingPassMaxInfoPrint=false;
+          }
+    
+        VFDsetpos(temp_vfd_position);
+        VFDstring(String((int)(passMaxEpoch-currentEpoch)));
+        VFDstring(" SECONDS   ");
+        
+        delay(500); ///////////////////////////////////////////////////////////////////////////////////////////////////////////// <-DELAY
+        
+        }
+    
+    else if((currentEpoch>passMaxEpoch) && passVisible)
+      {
+      
+      if(ongoingPassEndInfoPrint)
+        {
+        VFDclear();
+        VFDstring("VISIBLE PASS END @");  //18
+        VFDstring(passEndDir);            //4-6
+        VFDstring(" in T-");              //6
+        temp_vfd_position=22+passEndDir.length();
+        ongoingPassEndInfoPrint=false;
+        }
+
+      VFDsetpos(temp_vfd_position);
+      VFDstring(String((int)(passEndEpoch-currentEpoch))); //1-3
+      VFDstring(" SECONDS   ");
+      
+      delay(500); ///////////////////////////////////////////////////////////////////////////////////////////////////////////// <-DELAY
+      
+      }
+  }
+
+
   else if (currentEpoch>=passStartEpoch && passInProgress==false) //PASS START!
   {
+    keepcamlandcarryon=false;
     PWM_ramp(true,512); //lights fade on
     VFDclear();
+    
+
+
     if (passVisible) 
       {
-        VFDstring("VISIBLE PASS IN PROGRESS!");
-        VFDstring("Start: ");
+        VFDscrollMode(true);
+
+        VFDstring("VISIBLE PASS STARTING!");
+        delay(500);
+
+        VFDstring("  MAGNITUDE: ");
+        VFDstring(passMagnitude);
+
+        delay(500);
+
+        //ADD INFO ABOUT PASS!
+
+        VFDstring("Direction: ");
         VFDstring(passStartDir);
 
-        VFDstring("Max: ");
-        VFDstring(passMaxDir);
-        
-        VFDstring("End: ");
-        VFDstring(passEndDir);
-         
+        delay(500);
+  
       }
     else VFDstring("non-visible pass in progress.");
     passInProgress=true;
@@ -305,21 +388,51 @@ void loop()
 
   else if ((currentEpoch>=(passStartEpoch-300)) && firstWarningGiven==false) //5 Minutes (or less) till next pass
   {
-    keepcamlandcarryon=false;
-    VFDclear();
     if (passVisible) 
       {
+        
+        VFDclear();
+        
+        VFDscrollMode(true);
+
+        PWM_ramp(true,2048); //lights on
+
         VFDstring("VISIBLE PASS IN: ");
         VFDstring(String((int)(passStartEpoch-currentEpoch)));
         VFDstring(" SECONDS ");
 
-        VFDstring("MAGNITUDE: ");
+        delay(500);
+
+        VFDstring("  MAGNITUDE: ");
         VFDstring(passMagnitude);
 
+        delay(500);
+
         //ADD INFO ABOUT PASS!
+
+        VFDstring("Start: ");
+        VFDstring(passStartDir);
+
+             delay(500);
+ 
+
+        VFDstring("Max: ");
+        VFDstring(passMaxDir);
+
+             delay(500);
+
+        
+        VFDstring("End: ");
+        VFDstring(passEndDir);
+
+            delay(500);
+
+
         //oh! and blinkenlights!
-        firstWarningGiven=true;
+        PWM_ramp(false,2048); //lights on
+        VFDscrollMode(false);
       }
+      firstWarningGiven=true;
   }
 
 
@@ -431,7 +544,11 @@ while (!Udp.parsePacket())
     {
       VFDclear();
       VFDstring("No UDP RX for 25+sec, giving up.");
-      while(1) {}
+      delay(3000);
+      VFDclear();
+      VFDchar(1,1); //set VFD position.
+      VFDchar(0,'!'); //set VFD position.
+      while(1) clock();
     }
   }
 UDPretries=0;
