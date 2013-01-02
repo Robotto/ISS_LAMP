@@ -30,8 +30,8 @@ while True:
 	print 'RX: %s @ %s from %s' % (data, ctime(), remoteIP) 
         if (data.strip() == 'respond'):
 		currenttime = int(time())
-		#start in 5 minutes and 10 seconds
-		tstart = currenttime + 60*5 + 10
+		#start in 10 seconds
+		tstart = currenttime - 80
 		#max is 10 seconds later
 		tmax = tstart + 10
 		#end is 10 seconds after that

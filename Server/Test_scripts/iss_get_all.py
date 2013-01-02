@@ -29,16 +29,24 @@ earliest = 0      # show passes after this hour of day
 def parseRow(row):
   cols = row.findAll('td')
   dStr = cols[0].a.string
-  t1Str = ':'.join(cols[1].string.split(':'))
-  t2Str = ':'.join(cols[4].string.split(':'))
-  t3Str = ':'.join(cols[7].string.split(':'))
+
+  t1Str = ':'.join(cols[2].string.split(':'))
+#  print 't1str: %s' %t1Str
+  t2Str = ':'.join(cols[5].string.split(':'))
+#  print 't2str: %s' %t2Str
+  t3Str = ':'.join(cols[8].string.split(':'))
+#  print 't3str: %s' %t3Str
+
   #intensity = float(cols[1].string)
-  alt1 = cols[2].string.replace(u'\xB0', '')
-  az1 = cols[3].string
-  alt2 = cols[5].string.replace(u'\xB0', '')
-  az2 = cols[6].string
-  alt3 = cols[8].string.replace(u'\xB0', '')
-  az3 = cols[9].string
+  alt1 = cols[3].string.replace(u'\xB0', '')
+  print 'alt1: %s' %alt1
+
+
+  az1 = cols[4].string
+  alt2 = cols[6].string.replace(u'\xB0', '')
+  az2 = cols[7].string
+  alt3 = cols[9].string.replace(u'\xB0', '')
+  az3 = cols[10].string
   loc1 = '%s-%s' % (az1, alt1)
   loc2 = '%s-%s' % (az2, alt2)
   loc3 = '%s-%s' % (az3, alt3)
@@ -84,15 +92,15 @@ br.set_handle_robots(False)
 # Get the ISS ALL PASSES page.
 iHtml = br.open(issURL).read()
 
-
 # In the past, Beautiful Soup hasn't been able to parse the Heavens Above HTML.
 # To get around this problem, we extract just the table of ISS data and set
 # it in a well-formed HTML skeleton. If there is no table of ISS data, create
 # an empty table.
 try:
-    table = iHtml.split(r'<table id="ctl00_ContentPlaceHolder1_tblPasses"', 1)[1]
+    table = iHtml.split(r'<tr class="clickableRow ', 1)[1]
     table = table.split(r'>', 1)[1]
     table = table.split(r'</table>', 1)[0]
+
 except IndexError:
     table = '<tr><td></td></tr>'
 
@@ -117,6 +125,7 @@ rows = soup.findAll('table')[0].findAll('tr')[2:]
 print 'Current unix time: %s' % (int(time()))
 for row in rows:
   (start, max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix) = parseRow(row)
+
   if int(loc2.split('-')[1]) >= minAlt:
 
    if justPrint:

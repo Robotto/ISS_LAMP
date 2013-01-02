@@ -1,0 +1,201 @@
+
+
+<!DOCTYPE html>
+<html>
+<head><title>
+	ISS - All Passes
+</title><link href="css/ha.css" rel="stylesheet" type="text/css" /><link rel="shortcut icon" href="http://www.heavens-above.com/favicon.ico" type="image/vnd.microsoft.icon" /><link rel="icon" href="http://www.heavens-above.com/favicon.ico" type="image/vnd.microsoft.icon" />
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
+    <script type="text/javascript" src="scripts/standard.js"></script>
+    <script type="text/javascript">
+        function updateLocalTime(utc) {
+            var localdiff = parseInt(document.getElementById('utcOffset').value);
+            var local_now = new Date(utc.getTime() + localdiff);
+            $('#spanTime').text(formatTime(local_now));
+        }
+
+        jQuery(function () {
+            onClockTick = updateLocalTime;
+            startClock();
+        });
+    </script>
+
+    
+    </head>
+<body>
+    <form name="aspnetForm" method="post" action="/PassSummary.aspx?showAll=t" id="aspnetForm">
+<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="/wEPDwULLTIxMzcwMjI1MTRkGAEFHl9fQ29udHJvbHNSZXF1aXJlUG9zdEJhY2tLZXlfXxYFBSZjdGwwMCRDb250ZW50UGxhY2VIb2xkZXIxJHJhZGlvVmlzaWJsZQUmY3RsMDAkQ29udGVudFBsYWNlSG9sZGVyMSRyYWRpb1Zpc2libGUFJGN0bDAwJENvbnRlbnRQbGFjZUhvbGRlcjEkcmFkaW9OaWdodAUkY3RsMDAkQ29udGVudFBsYWNlSG9sZGVyMSRyYWRpb05pZ2h0BSJjdGwwMCRDb250ZW50UGxhY2VIb2xkZXIxJHJhZGlvQWxs3nHWyuZprvJrnM07Iwmr1lusvcbUfSgxcu9+dPORQSE=" />
+
+<input type="hidden" name="__EVENTVALIDATION" id="__EVENTVALIDATION" value="/wEWBwLVhofiCQL9hJP6CwKC56rGDwKt7K6OCwKrlO6rCAKvj9zIAwKrv8GPDIgcVj/08G10AphR6L3Cb5HhaF/eDq7la6RPSIprbq6Y" />
+    <input type="hidden" name="utcOffset" id="utcOffset" value="0" />
+    <table border="0">
+        <tr>
+            <td>
+                <a id="ctl00_hyperlinkLogo" href="/?lat=0&amp;lng=0&amp;loc=Unspecified&amp;alt=0&amp;tz=UCT"><img src="images/tinylogo.jpg" alt="" border="0" /></a>
+            </td>
+            <td>
+                
+                    <script type="text/javascript"><!--
+                        google_ad_client = "pub-7053724467301822";
+                        /* 728x90, created 9/24/11 */
+                        google_ad_slot = "4384331888";
+                        google_ad_width = 728;
+                        google_ad_height = 90;
+//-->
+                    </script>
+                    <script type="text/javascript" src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+                    </script>
+                
+            </td>
+
+            <td>
+            </td>
+
+        </tr>
+        <tr>
+            <td colspan="2" valign="top">
+                <table width="100%" style="border-top: 1px solid black;">
+                    <tr>
+                        <td align="left">
+                            <span id="ctl00_lblTitle" class="pagehead">ISS - All Passes</span>
+                        </td>
+                        <td align="right" class="navbar">
+                            <span id="ctl00_lblObservationSite" class="obsSite">Unspecified;</span>
+                            <span id="spanTime" class="obsSite">
+                                01:57:44</span><br />
+                            <span id="ctl00_lblNavBar">| <a href="/?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT" title="Go to home page">Home</a>&nbsp;| <a href="satinfo.aspx?satid=25544&lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT" title="Show information about this satellite">Info.</a>&nbsp;| <a href="orbit.aspx?satid=25544&lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT" title="Show orbit of this satellite">Orbit</a>&nbsp;| <a href="PassesHelp.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT" title="Get help on how this page">Help</a>&nbsp;|</span>
+                        </td>
+                    </tr>
+                </table>
+                <p />
+                
+    <input type="hidden" name="ctl00$ContentPlaceHolder1$hidStartUtc" id="ctl00_ContentPlaceHolder1_hidStartUtc" value="634922566645092663" />
+    <table>
+        <tr>
+            <td class="userinfo">
+                Search period start:
+            </td>
+            <td class="userinfo">
+                <span id="ctl00_ContentPlaceHolder1_lblSearchStart">28 December 2012 00:00</span>
+            </td>
+            <td class="userinfo" rowspan="2">
+                <input type="submit" name="ctl00$ContentPlaceHolder1$btnPrev" value="&lt;" id="ctl00_ContentPlaceHolder1_btnPrev" title="show previous search period" />
+                <input type="submit" name="ctl00$ContentPlaceHolder1$btnNext" value=">" id="ctl00_ContentPlaceHolder1_btnNext" title="show next search period" />
+            </td>
+        </tr>
+        <tr>
+            <td class="userinfo">
+                Search period end:
+            </td>
+            <td class="userinfo">
+                <span id="ctl00_ContentPlaceHolder1_lblSearchEnd">07 January 2013 00:00</span>
+            </td>
+        </tr>
+        <tr>
+            <td class="userinfo">
+                <a id="ctl00_ContentPlaceHolder1_hlOrbit" title="Show orbit of this satellite" href="orbit.aspx?satid=25544&amp;lat=0&amp;lng=0&amp;loc=Unspecified&amp;alt=0&amp;tz=UCT">Orbit:</a>
+            </td>
+            <td class="userinfo" colspan="2">
+                <span id="ctl00_ContentPlaceHolder1_lblOrbit">400 x 423 km, 51.6° (Epoch: 27 December)</span>
+            </td>
+        </tr>
+    </table>
+    <p>
+        Passes to include:
+        <input id="ctl00_ContentPlaceHolder1_radioVisible" type="radio" name="ctl00$ContentPlaceHolder1$visible" value="radioVisible" onclick="javascript:setTimeout(&#39;__doPostBack(\&#39;ctl00$ContentPlaceHolder1$radioVisible\&#39;,\&#39;\&#39;)&#39;, 0)" /><label for="ctl00_ContentPlaceHolder1_radioVisible">visible only</label>
+        <input id="ctl00_ContentPlaceHolder1_radioNight" type="radio" name="ctl00$ContentPlaceHolder1$visible" value="radioNight" onclick="javascript:setTimeout(&#39;__doPostBack(\&#39;ctl00$ContentPlaceHolder1$radioNight\&#39;,\&#39;\&#39;)&#39;, 0)" /><label for="ctl00_ContentPlaceHolder1_radioNight">visible/night</label>
+        <input id="ctl00_ContentPlaceHolder1_radioAll" type="radio" name="ctl00$ContentPlaceHolder1$visible" value="radioAll" checked="checked" /><label for="ctl00_ContentPlaceHolder1_radioAll">all</label>
+    </p>
+    <p>
+        <img src="images/updated.gif" alt="updated" width="60" height="12" /><span id="ctl00_ContentPlaceHolder1_lblMessage" class="userinfo">Click on the date to see the ground track during the pass.</span></p>
+    <p />
+    <table class="standardTable" cellspacing="0" cellpadding="4" rules="cols">
+        <tr class="tablehead">
+            <td align="center" rowspan="2" valign="middle">
+                Date
+            </td>
+            <td align="center">
+                <a href="glossary.aspx?term=magnitude&lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT">
+                    Brightness</a>
+            </td>
+            <td align="center" colspan="3">
+                Start
+            </td>
+            <td align="center" colspan="3">
+                Highest point
+            </td>
+            <td align="center" colspan="3">
+                End
+            </td>
+            <td align="center" rowspan="2" valign="middle">
+                Pass type
+            </td>
+        </tr>
+        <tr class="tablehead">
+            <td align="center">
+                [Mag]
+            </td>
+            <td align="center">
+                Time
+            </td>
+            <td>
+                Alt.
+            </td>
+            <td>
+                Az.
+            </td>
+            <td align="center">
+                Time
+            </td>
+            <td>
+                Alt.
+            </td>
+            <td>
+                Az.
+            </td>
+            <td align="center">
+                Time
+            </td>
+            <td>
+                Alt.
+            </td>
+            <td>
+                Az.
+            </td>
+        </tr>
+        <tr class="clickableRow lightrow" onclick="window.location='passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56289.3990735764&type=A'"><td><a href="passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56289.3990735764&type=A" title="Show the ground track during this pass">28 Dec</a></td><td align="center">-</td><td>09:31:27</td><td align="center">10°</td><td>SW</td><td>09:34:39</td><td align="center">46°</td><td>NW</td><td>09:37:49</td><td align="center">10°</td><td>NNE</td><td>Day</td></tr><tr class="clickableRow darkrow" onclick="window.location='passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56289.881612419&type=A'"><td><a href="passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56289.881612419&type=A" title="Show the ground track during this pass">28 Dec</a></td><td align="center">-</td><td>21:06:15</td><td align="center">10°</td><td>NW</td><td>21:09:31</td><td align="center">80°</td><td>SW</td><td>21:12:49</td><td align="center">10°</td><td>SSE</td><td>Night</td></tr><tr class="clickableRow lightrow" onclick="window.location='passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56290.3643630556&type=A'"><td><a href="passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56290.3643630556&type=A" title="Show the ground track during this pass">29 Dec</a></td><td align="center">-</td><td>08:41:23</td><td align="center">10°</td><td>SSW</td><td>08:44:40</td><td align="center">60°</td><td>SE</td><td>08:47:55</td><td align="center">10°</td><td>NE</td><td>Day</td></tr><tr class="clickableRow darkrow" onclick="window.location='passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56290.8469019792&type=A'"><td><a href="passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56290.8469019792&type=A" title="Show the ground track during this pass">29 Dec</a></td><td align="center">-</td><td>20:16:31</td><td align="center">10°</td><td>NNW</td><td>20:19:32</td><td align="center">35°</td><td>NE</td><td>20:22:35</td><td align="center">10°</td><td>ESE</td><td>Night</td></tr><tr class="clickableRow lightrow" onclick="window.location='passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56291.3296331019&type=A'"><td><a href="passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56291.3296331019&type=A" title="Show the ground track during this pass">30 Dec</a></td><td align="center">-</td><td>07:51:57</td><td align="center">10°</td><td>S</td><td>07:54:40</td><td align="center">23°</td><td>SE</td><td>07:57:20</td><td align="center">10°</td><td>ENE</td><td>Day</td></tr><tr class="clickableRow darkrow" onclick="window.location='passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56291.3965922801&type=A'"><td><a href="passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56291.3965922801&type=A" title="Show the ground track during this pass">30 Dec</a></td><td align="center">-</td><td>09:30:12</td><td align="center">10°</td><td>WNW</td><td>09:31:05</td><td align="center">11°</td><td>NW</td><td>09:31:58</td><td align="center">10°</td><td>NW</td><td>Day</td></tr><tr class="clickableRow lightrow" onclick="window.location='passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56291.8121766204&type=A'"><td><a href="passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56291.8121766204&type=A" title="Show the ground track during this pass">30 Dec</a></td><td align="center">-</td><td>19:27:39</td><td align="center">10°</td><td>NNE</td><td>19:29:32</td><td align="center">15°</td><td>NE</td><td>19:31:25</td><td align="center">10°</td><td>E</td><td>Night</td></tr><tr class="clickableRow darkrow" onclick="window.location='passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56291.8791343056&type=A'"><td><a href="passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56291.8791343056&type=A" title="Show the ground track during this pass">30 Dec</a></td><td align="center">-</td><td>21:03:46</td><td align="center">10°</td><td>W</td><td>21:05:57</td><td align="center">17°</td><td>SW</td><td>21:08:08</td><td align="center">10°</td><td>SSW</td><td>Night</td></tr><tr class="clickableRow lightrow" onclick="window.location='passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56292.3618539005&type=A'"><td><a href="passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56292.3618539005&type=A" title="Show the ground track during this pass">31 Dec</a></td><td align="center">-</td><td>08:38:15</td><td align="center">10°</td><td>WSW</td><td>08:41:04</td><td align="center">25°</td><td>NW</td><td>08:43:51</td><td align="center">10°</td><td>N</td><td>Day</td></tr><tr class="clickableRow darkrow" onclick="window.location='passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56292.8443879282&type=A'"><td><a href="passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56292.8443879282&type=A" title="Show the ground track during this pass">31 Dec</a></td><td align="center">-</td><td>20:12:49</td><td align="center">10°</td><td>NW</td><td>20:15:55</td><td align="center">40°</td><td>SW</td><td>20:19:02</td><td align="center">10°</td><td>SSE</td><td>Night</td></tr><tr class="clickableRow lightrow" onclick="window.location='passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56293.3271201042&type=A'"><td><a href="passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56293.3271201042&type=A" title="Show the ground track during this pass">01 Jan</a></td><td align="center">-</td><td>07:47:43</td><td align="center">10°</td><td>SW</td><td>07:51:03</td><td align="center">70°</td><td>NW</td><td>07:54:20</td><td align="center">10°</td><td>NNE</td><td>Day</td></tr><tr class="clickableRow darkrow" onclick="window.location='passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56293.8096502431&type=A'"><td><a href="passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56293.8096502431&type=A" title="Show the ground track during this pass">01 Jan</a></td><td align="center">-</td><td>19:22:40</td><td align="center">10°</td><td>NNW</td><td>19:25:53</td><td align="center">68°</td><td>NE</td><td>19:29:09</td><td align="center">10°</td><td>SE</td><td>Visible</td></tr><tr class="clickableRow lightrow" onclick="window.location='passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56294.2923747222&type=A'"><td><a href="passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56294.2923747222&type=A" title="Show the ground track during this pass">02 Jan</a></td><td align="center">-</td><td>06:57:50</td><td align="center">10°</td><td>SSW</td><td>07:01:01</td><td align="center">40°</td><td>SE</td><td>07:04:09</td><td align="center">10°</td><td>NE</td><td>Day</td></tr><tr class="clickableRow darkrow" onclick="window.location='passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56294.7749086806&type=A'"><td><a href="passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56294.7749086806&type=A" title="Show the ground track during this pass">02 Jan</a></td><td align="center">-</td><td>18:33:09</td><td align="center">10°</td><td>N</td><td>18:35:52</td><td align="center">25°</td><td>NE</td><td>18:38:36</td><td align="center">10°</td><td>ESE</td><td>Visible</td></tr><tr class="clickableRow lightrow" onclick="window.location='passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56295.2576078009&type=A'"><td><a href="passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56295.2576078009&type=A" title="Show the ground track during this pass">03 Jan</a></td><td align="center">-</td><td>06:08:42</td><td align="center">10°</td><td>SSE</td><td>06:10:57</td><td align="center">17°</td><td>SE</td><td>06:13:10</td><td align="center">10°</td><td>E</td><td>Day</td></tr><tr class="clickableRow darkrow" onclick="window.location='passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56295.3245685185&type=A'"><td><a href="passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56295.3245685185&type=A" title="Show the ground track during this pass">03 Jan</a></td><td align="center">-</td><td>07:45:22</td><td align="center">10°</td><td>W</td><td>07:47:22</td><td align="center">15°</td><td>NW</td><td>07:49:22</td><td align="center">10°</td><td>NNW</td><td>Day</td></tr><tr class="clickableRow lightrow" onclick="window.location='passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56295.7401456713&type=A'"><td><a href="passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56295.7401456713&type=A" title="Show the ground track during this pass">03 Jan</a></td><td align="center">-</td><td>17:45:14</td><td align="center">10°</td><td>NE</td><td>17:45:48</td><td align="center">10°</td><td>NE</td><td>17:46:22</td><td align="center">10°</td><td>ENE</td><td>Day</td></tr><tr class="clickableRow darkrow" onclick="window.location='passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56295.8070986921&type=A'"><td><a href="passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56295.8070986921&type=A" title="Show the ground track during this pass">03 Jan</a></td><td align="center">-</td><td>19:19:35</td><td align="center">10°</td><td>WNW</td><td>19:22:13</td><td align="center">23°</td><td>SW</td><td>19:24:52</td><td align="center">10°</td><td>S</td><td>Visible</td></tr><tr class="clickableRow lightrow" onclick="window.location='passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56296.2898053009&type=A'"><td><a href="passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56296.2898053009&type=A" title="Show the ground track during this pass">04 Jan</a></td><td align="center">-</td><td>06:54:12</td><td align="center">10°</td><td>WSW</td><td>06:57:19</td><td align="center">36°</td><td>NW</td><td>07:00:23</td><td align="center">10°</td><td>NNE</td><td>Day</td></tr><tr class="clickableRow darkrow" onclick="window.location='passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56296.7723302199&type=A'"><td><a href="passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56296.7723302199&type=A" title="Show the ground track during this pass">04 Jan</a></td><td align="center">-</td><td>18:28:57</td><td align="center">10°</td><td>NW</td><td>18:32:09</td><td align="center">60°</td><td>SW</td><td>18:35:23</td><td align="center">10°</td><td>SSE</td><td>Visible</td></tr><tr class="clickableRow lightrow" onclick="window.location='passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56297.2550381829&type=A'"><td><a href="passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56297.2550381829&type=A" title="Show the ground track during this pass">05 Jan</a></td><td align="center">-</td><td>06:03:54</td><td align="center">10°</td><td>SSW</td><td>06:07:15</td><td align="center">79°</td><td>SE</td><td>06:10:34</td><td align="center">10°</td><td>NE</td><td>Day</td></tr><tr class="clickableRow darkrow" onclick="window.location='passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56297.7375663079&type=A'"><td><a href="passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56297.7375663079&type=A" title="Show the ground track during this pass">05 Jan</a></td><td align="center">-</td><td>17:38:59</td><td align="center">10°</td><td>NNW</td><td>17:42:05</td><td align="center">44°</td><td>NE</td><td>17:45:13</td><td align="center">10°</td><td>SE</td><td>Day</td></tr><tr class="clickableRow lightrow" onclick="window.location='passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56298.2202602083&type=A'"><td><a href="passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56298.2202602083&type=A" title="Show the ground track during this pass">06 Jan</a></td><td align="center">-</td><td>05:14:13</td><td align="center">10°</td><td>S</td><td>05:17:10</td><td align="center">28°</td><td>SE</td><td>05:20:05</td><td align="center">10°</td><td>ENE</td><td>Visible</td></tr><tr class="clickableRow darkrow" onclick="window.location='passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56298.7027908565&type=A'"><td><a href="passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56298.7027908565&type=A" title="Show the ground track during this pass">06 Jan</a></td><td align="center">-</td><td>16:49:45</td><td align="center">10°</td><td>N</td><td>16:52:01</td><td align="center">18°</td><td>NE</td><td>16:54:17</td><td align="center">10°</td><td>E</td><td>Day</td></tr><tr class="clickableRow lightrow" onclick="window.location='passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56298.7697472338&type=A'"><td><a href="passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56298.7697472338&type=A" title="Show the ground track during this pass">06 Jan</a></td><td align="center">-</td><td>18:26:46</td><td align="center">10°</td><td>W</td><td>18:28:26</td><td align="center">13°</td><td>SW</td><td>18:30:06</td><td align="center">10°</td><td>SSW</td><td>Visible</td></tr>
+    </table>
+
+                &nbsp;
+                <p />
+                <table style="border-top: 1px solid black;">
+                    <tr>
+                        <td valign="top">
+                            <span class="footer">
+                                Developed and maintained by <a href="mailto:Chris.Peat@heavens-above.com">Chris Peat</a>, Heavens-Above GmbH. Please read the updated <a href="faq.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT">FAQ</a> before sending e-mail. <a href="Imprint.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT">Imprint</a>.</span>
+                        </td>
+                        <td>
+                            <a href="http://www.dlr.de/rb/en/" target="_blank">
+                                <img src="images/dlrhost.gif" align="left" border="0" alt="DLR" /></a>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+            <td rowspan="1" valign="Top">
+                <p />
+                <script type="text/javascript"><!--
+                    google_ad_client = "pub-7053724467301822";
+                    google_ad_width = 160;
+                    google_ad_height = 600;
+                    google_ad_format = "160x600_as";
+                    google_ad_type = "text_image";
+                    google_ad_channel = "";
+                    //--></script>
+                <script type="text/javascript" src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+                </script>
+            </td>
+        </tr>
+    </table>
+    </form>
+</body>
+</html>
