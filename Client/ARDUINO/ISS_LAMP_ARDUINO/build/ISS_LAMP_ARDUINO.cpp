@@ -18,6 +18,7 @@ Before shipping:
 -Internalize geo-location, so coordinates are a part of the lookup
 */
 
+#include <Arduino.h>
 #include <SPI.h>
 #include <Ethernet.h>
 #include <EthernetDNS.h> //for looking up the NTP servers IP
@@ -27,6 +28,25 @@ Before shipping:
 // Newer Ethernet shields have a MAC address printed on a sticker on the shield
 byte mac[] = {  0x90, 0xA2, 0xDA, 0x0D, 0x34, 0xFC };
 
+long PWM_MILLIS=millis();
+void PWM_ramp(boolean direction, unsigned long duration_ms);
+void clock();
+void UDPwait(boolean ISSorNTP);
+long sendISSpacket(IPAddress& address);
+void handle_ISS_udp();
+long sendNTPpacket(IPAddress& address);
+void handle_ntp();
+void VFDsetup();
+void VFDreset();
+void VFDclear();
+void VFDscrollMode(boolean onoff);
+void VFDsetpos(byte position);
+void VFDsmileyMake();
+void VFDchar(int isCommand, unsigned char databyte);
+void VFDflashyString(String inputstring);
+void VFDstring(String inputstring);
+void VFDsetDataport(unsigned char byte_of_doom);
+void VFDdancingSmileyForever();
 IPAddress robottobox(62,212,66,171); //IP address constructor
 
 //DNS STUFF:
@@ -850,37 +870,37 @@ void VFDstring(String inputstring)
                                    //also skip the strange non ascii identifyer byte.
   switch (checkbyte)
     {
-    case 166: //æ
+    case 166: //Ã¦
       VFDchar(0,0x1c);
       VFDchar(0,0x7b);
       i++;
     break;
 
-    case 184: //ø
+    case 184: //Ã¸
       VFDchar(0,0x1c);
       VFDchar(0,0x7c);
       i++;
     break;    
 
-    case 165: //å
+    case 165: //Ã¥
       VFDchar(0,0x1c);
       VFDchar(0,0x7d);
       i++;
     break;
 
-    case 134: //Æ
+    case 134: //Ã†
       VFDchar(0,0x1c);
       VFDchar(0,0x5b);
       i++;
     break;    
 
-    case 152: //Ø
+    case 152: //Ã˜
       VFDchar(0,0x1c);
       VFDchar(0,0x5c);
       i++;
     break;    
 
-    case 133: //Å
+    case 133: //Ã…
       VFDchar(0,0x1c);
       VFDchar(0,0x5d);
       i++;

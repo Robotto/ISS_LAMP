@@ -315,19 +315,20 @@ S:::::::::::::::SS     tt:::::::::::tt a::::::::::aa:::a       tt:::::::::::tt  
       
         if(ongoingPassMaxInfoPrint)
           {
+          VFDscrollMode(false);
           VFDclear();
-          VFDstring("VISIBLE PASS MAX @");
+          VFDstring("Visible pass max @");
           VFDstring(passMaxDir); 
           VFDstring(" in T-");
-          temp_vfd_position=22+passMaxDir.length();
+          temp_vfd_position=24+passMaxDir.length();
           ongoingPassMaxInfoPrint=false;
           }
     
         VFDsetpos(temp_vfd_position);
         VFDstring(String((int)(passMaxEpoch-currentEpoch)));
-        VFDstring(" SECONDS   ");
+        VFDstring(" seconds ");
         
-        delay(500); ///////////////////////////////////////////////////////////////////////////////////////////////////////////// <-DELAY
+       // delay(100); ///////////////////////////////////////////////////////////////////////////////////////////////////////////// <-DELAY
         
         }
     
@@ -336,19 +337,20 @@ S:::::::::::::::SS     tt:::::::::::tt a::::::::::aa:::a       tt:::::::::::tt  
       
       if(ongoingPassEndInfoPrint)
         {
+
         VFDclear();
-        VFDstring("VISIBLE PASS END @");  //18
+        VFDstring("Visible pass end @");  //18
         VFDstring(passEndDir);            //4-6
         VFDstring(" in T-");              //6
-        temp_vfd_position=22+passEndDir.length();
+        temp_vfd_position=24+passEndDir.length();
         ongoingPassEndInfoPrint=false;
         }
 
       VFDsetpos(temp_vfd_position);
       VFDstring(String((int)(passEndEpoch-currentEpoch))); //1-3
-      VFDstring(" SECONDS   ");
+      VFDstring(" seconds ");
       
-      delay(500); ///////////////////////////////////////////////////////////////////////////////////////////////////////////// <-DELAY
+     // delay(100); ///////////////////////////////////////////////////////////////////////////////////////////////////////////// <-DELAY
       
       }
   }
@@ -369,20 +371,20 @@ S:::::::::::::::SS     tt:::::::::::tt a::::::::::aa:::a       tt:::::::::::tt  
         VFDstring("VISIBLE PASS STARTING!");
         delay(500);
 
-        VFDstring("  MAGNITUDE: ");
+        VFDstring("  Magnitude: ");
         VFDstring(passMagnitude);
 
         delay(500);
 
         //ADD INFO ABOUT PASS!
 
-        VFDstring("Direction: ");
+        VFDstring(" Direction: ");
         VFDstring(passStartDir);
 
-        delay(500);
+        delay(1000);
   
       }
-    else VFDstring("non-visible pass in progress.");
+    else VFDstring("Non-visible pass in progress.");
     passInProgress=true;
   }
 
@@ -396,41 +398,42 @@ S:::::::::::::::SS     tt:::::::::::tt a::::::::::aa:::a       tt:::::::::::tt  
         VFDscrollMode(true);
 
         PWM_ramp(true,2048); //lights on
-
-        VFDstring("VISIBLE PASS IN: ");
+        
+        VFDclear();
+        VFDstring("Visible pass in: ");
         VFDstring(String((int)(passStartEpoch-currentEpoch)));
-        VFDstring(" SECONDS ");
+        VFDstring(" seconds ");
 
         delay(500);
 
-        VFDstring("  MAGNITUDE: ");
+        VFDstring("  Magnitude: ");
         VFDstring(passMagnitude);
 
         delay(500);
 
         //ADD INFO ABOUT PASS!
 
-        VFDstring("Start: ");
+        VFDstring(" Start: ");
         VFDstring(passStartDir);
 
              delay(500);
  
 
-        VFDstring("Max: ");
+        VFDstring(" Max: ");
         VFDstring(passMaxDir);
 
              delay(500);
 
         
-        VFDstring("End: ");
+        VFDstring(" End: ");
         VFDstring(passEndDir);
 
             delay(500);
 
-
         //oh! and blinkenlights!
         PWM_ramp(false,2048); //lights on
         VFDscrollMode(false);
+        VFDclear();
       }
       firstWarningGiven=true;
   }
@@ -490,18 +493,21 @@ void clock()
   
     unsigned long hours=((currentEpoch  % 86400L) / 3600)+GMT_plus; //calc the hour (86400 equals secs per day)
     if (DST) hours++; //daylight savings boolean is checked
+    unsigned long minutes=((currentEpoch % 3600) / 60);
+    unsigned long seconds= (currentEpoch % 60);
+    
     if(hours<10) VFDchar(0,'0'); //add leading '0' to hours lower than 10
     VFDstring(String(hours)); // print the hour
 
     VFDchar(0,':');  
 
-    unsigned long minutes=((currentEpoch % 3600) / 60);
+    
     if ( minutes < 10 ) VFDchar(0,'0'); //add leading '0' to minutes lower than 10
     VFDstring(String(minutes)); // print the minute (3600 equals secs per minute)
 
     VFDchar(0,':'); 
 
-    unsigned long seconds= (currentEpoch % 60);
+    
     if ( seconds < 10 ) VFDchar(0,'0'); //add leading '0' to seconds lower than 10
     VFDstring(String(seconds)); // print the second
 }
@@ -722,7 +728,7 @@ else
     
     //SECS TO PASS:
     secs_to_next_pass=passStartEpoch-currentEpoch;
-    VFDstring("SECONDS TIL NEXT PASS: ");
+    VFDstring("SECONDS TO NEXT PASS: ");
     VFDstring(String(secs_to_next_pass));
     
    
