@@ -246,6 +246,27 @@ LLLLLLLLLLLLLLLLLLLLLLLL   ooooooooooo      ooooooooooo    p::::::pppppppp
                                                           p:::::::p                   
                                                           ppppppppp
 */
+
+void timekeeper(void)
+{
+          if(millis()>lastmillis+1000) //a second (or more) has passed
+          {
+            currentEpoch+=((millis()-lastmillis)/1000); //add  a second or more to the current epoch
+            lastmillis=millis();
+            standalone_seconds++;
+            if (keepcamlandcarryon) clock();
+          }
+
+          if(standalone_seconds>=30)
+          {
+          sendNTPpacket(timeServer);
+          UDPwait(false);
+          handle_ntp();
+          currentEpoch++; // meh.. calibration...
+          standalone_seconds=0;
+          }
+}
+
 void loop()
 {
 
@@ -253,26 +274,8 @@ void loop()
 
 //VFDdancingSmileyForever();
   
-  if(millis()>lastmillis+1000) //a second (or more) has passed
-  {
-    currentEpoch+=((millis()-lastmillis)/1000); //add  a second or more to the current epoch
-    lastmillis=millis();
-    standalone_seconds++;
-    if (keepcamlandcarryon) clock();
-  }
-  
-  if(standalone_seconds>=30)
-  {
-  sendNTPpacket(timeServer);
-  UDPwait(false);
- // VFDchar(1,35);
-  handle_ntp();
+timekeeper();
 
-  currentEpoch++; // meh.. calibration...
-  
- // VFDstring("UDP!");
-  standalone_seconds=0;
-  }
   
 /*
   SSSSSSSSSSSSSSS      tttt                                    tttt                                                                                          hhhhhhh               iiii                                               
@@ -554,7 +557,12 @@ while (!Udp.parsePacket())
       VFDclear();
       VFDchar(1,1); //set VFD position.
       VFDchar(0,'!'); //set VFD position.
-      while(1) clock();
+      while(1) 
+      {
+        keepcamlandcarryon=true;
+        timekeeper();
+
+      }
     }
   }
 UDPretries=0;
