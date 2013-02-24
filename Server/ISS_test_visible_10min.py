@@ -30,12 +30,12 @@ while True:
 	print 'RX: %s @ %s from %s' % (data, ctime(), remoteIP) 
         if (data.strip() == 'respond'):
 		currenttime = int(time())
-		#start in 10 seconds
-		tstart = currenttime - 80
-		#max is 10 seconds later
-		tmax = tstart + 10
-		#end is 10 seconds after that
-		tend = tmax + 10
+		#start in 60 seconds
+		tstart = currenttime - 20
+		#max is 60 seconds later
+		tmax = tstart + 60
+		#end is 60 seconds after that
+		tend = tmax + 60
 
 		MESSAGE='V\0-2.0\0%s\0SE-10\0%s\0S-22\0%s\0SW-10' % (tstart,tmax,tend)
                 UDPSock.sendto(MESSAGE, (remoteIP, remotePort))
