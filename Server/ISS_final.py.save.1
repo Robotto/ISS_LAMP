@@ -8,6 +8,11 @@ from time import strftime, strptime, mktime, struct_time, time, ctime
 from getopt import getopt
 import os, sys, envoy
 
+usage = '''usage: iss-calendar [-uh]
+
+options: -H : print ISS info, with human readable dates instead of unix epoch timecodes - DISABLED
+         -h : help; print this message and quit
+'''
 
 # Personalization.
 latitude = 56.156361
@@ -63,6 +68,15 @@ def parseRow(row, isvisible):
     return (start, max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix)
 
 
+# Parse command line options.
+HumanPrint = False
+optlist, args = getopt(sys.argv[1:], 'Hh')
+for o, a in optlist:
+  if o == '-H':
+    HumanPrint = True
+  else:
+    print usage
+    sys.exit()
 
 #http://heavens-above.com/PassSummary.aspx?showAll=t&satid=25544&lat=56.156361&lng=10.188631&alt=40&tz=CET
 #http://heavens-above.com/PassSummary.aspx?showAll=f&satid=25544&lat=56.156361&lng=10.188631&alt=40&tz=CET
@@ -78,31 +92,19 @@ def ISS_PASS_GET():
   br = mechanize.Browser()
   br.set_handle_robots(False)
 
-  # Get the ISS PASSES pages:
-  print 'Retriveving list of all passes..'
+  # Get the ISS PASSES pages.
   allHtml = br.open(issAllURL).read()
-  print 'Retrieving list of visble passes specifically..'
   visibleHtml = br.open(issVisibleURL).read()
-
-
-  print 'Parsing HTML into data rows...' 
 
   # In the past, Beautiful Soup hasn't been able to parse the Heavens Above HTML.
   # To get around this problem, we extract just the table of ISS data and set
   # it in a well-formed HTML skeleton. If there is no table of ISS data, create
   # an empty table.
   try:
-
-      #allTable = allHtml.split(r'<tr class="clickableRow ', 1)[1] #split after first "clickable row" tag, return 2nd portion
-      #allTable = allTable.split(r'>', 1)[1] #split after first ">" return second portion
-      #allTable = allTable.split(r'</table>', 1)[0] #split after first "</table>" return first portion
-
-      allTable = allHtml.split(r'<table class="standardTable"', 1)[1] #split after first "standard table" tag, return 2nd portion
-      allTable = allTable.split(r'<tr class="tablehead">', 1)[1] #split after first "tablehead" tag return second portion
-      allTable = allTable.split(r'<tr class="tablehead">', 1)[1] #split after first "tablehead" tag return second portion , again.
-      allTable = allTable.split(r'</tr>', 1)[1] #split after first "</tr>" tag return second portion
-      allTable = allTable.split(r'</table>', 1)[0] #split after first "</table>" return first portion
-
+      #allTable = allHtml.split(r'<table id="ctl00_ContentPlaceHolder1_tblPasses"', 1)[1]
+      allTable = allHtml.split(r'<tr class="clickableRow ', 1)[1]
+      allTable = allTable.split(r'>', 1)[1]
+      allTable = allTable.split(r'</table>', 1)[0]
   except IndexError:
       allTable = '<tr><td></td></tr>'
 
@@ -117,17 +119,10 @@ def ISS_PASS_GET():
   </html>''' % allTable
 
   try:
-      #visibleTable = visibleHtml.split(r'<tr class="clickableRow ', 1)[1]
-      #visibleTable = visibleTable.split(r'>', 1)[1]
-      #visibleTable = visibleTable.split(r'</table>', 1)[0]
-      
-      visibleTable = visibleHtml.split(r'<table class="standardTable"', 1)[1] #split after first "standard table" tag, return 2nd portion
-      visibleTable = visibleTable.split(r'<tr class="tablehead">', 1)[1] #split after first "tablehead" tag return second portion
-      visibleTable = visibleTable.split(r'<tr class="tablehead">', 1)[1] #split after first "tablehead" tag return second portion , again.
-      visibleTable = visibleTable.split(r'</tr>', 1)[1] #split after first "</tr>" tag return second portion
-      visibleTable = visibleTable.split(r'</table>', 1)[0] #split after first "</table>" return first portion
-
-      
+      #visibleTable = visibleHtml.split(r'<table id="ctl00_ContentPlaceHolder1_tblPasses"', 1)[1]
+      visibleTable = visibleHtml.split(r'<tr class="clickableRow lightrow"', 1)[1]
+      visibleTable = visibleTable.split(r'>', 1)[1]
+      visibleTable = visibleTable.split(r'</table>', 1)[0]
   except IndexError:
       visibleTable = '<tr><td></td></tr>'
 
@@ -146,65 +141,53 @@ def ISS_PASS_GET():
   visibleSoup = BeautifulSoup(visibleHtml)
 
   # Collect only the data rows of the table.
-  #allRows = allSoup.findAll('table')[0].findAll('tr')[0:]
-  #visibleRows = visibleSoup.findAll('table')[0].findAll('tr')[0:]
+  allRows = allSoup.findAll('table')[0].findAll('tr')[2:]
+  visibleRows = visibleSoup.findAll('table')[0].findAll('tr')[2:]
 
-  allRows = allSoup.findAll('table')[0].findAll('tr')[0:]
-  visibleRows = visibleSoup.findAll('table')[0].findAll('tr')[0:]
+  
 
-  #print
-  #print 'all:'
-  #print allRows
-  #print
-  #print 'visible:'
-  #print visibleRows
-  #print
-  #print
-
+  #print allRows[1]
 
   #Printing:
   currenttime = int(time())
 
-#  print 'DEBUG: Current unix time: %s' % (currenttime)
+  print 'DEBUG: Current unix time: %s' % (currenttime)
 
 
   #set up som startup values for the pass starttimes:
   A_startUnix=0  
   V_startUnix=0  
-  
-  print 'parsing rows'
+
 
   #get data for the next future regular pass:
-  All_rowCount=0
+  Regular_rowCount=0
   while A_startUnix<currenttime: 
-    try: (A_start, A_max, A_end, A_loc1, A_loc2, A_loc3, A_startUnix, A_maxUnix, A_endUnix) = parseRow(allRows[All_rowCount], 0)
+    try: (A_start, A_max, A_end, A_loc1, A_loc2, A_loc3, A_startUnix, A_maxUnix, A_endUnix) = parseRow(allRows[Regular_rowCount], 0)
     except: A_startUnix=currenttime 
 
-    All_rowCount+=1
+    Regular_rowCount+=1
 
-    print 'Checked pass no. %s for past timecode' % (All_rowCount)
+    print 'Checking regular pass no. %s for past timecode' % (Regular_rowCount)
   
   
   #get data for the next visible pass:
   Visible_rowCount=0
   while V_startUnix<currenttime:
     try: (V_start, V_max, V_end, V_loc1, V_loc2, V_loc3, V_startUnix, V_maxUnix, V_endUnix, V_mag) = parseRow(visibleRows[Visible_rowCount], 1)
-    except: V_startUnix=currenttime #make sure next check doesn't fail 
+    except: V_startUnix=0 #make sure next check doesn't fail 
 
     Visible_rowCount+=1
 
-    print 'Checked visible pass no. %s for past timecode' % (Visible_rowCount)
+    print 'Checking visible pass no. %s for past timecode' % (Visible_rowCount)
   
 	
   #check if it's the same pass and if so print the visible one!
-  print 'The next pass of the ISS above %s, %s is:' % (latitude, longtitude)
-
-  if (V_startUnix==A_startUnix):
-    print 'Visible pass no. %s, which is %s seconds in the future @ %s' % (Visible_rowCount, V_startUnix-currenttime, V_start.strftime('%d/%m %H:%M:%S'))
+  if (V_startUnix<=A_startUnix):
+    print 'Visible pass no. %s is %s seconds in the future' % (Visible_rowCount, V_startUnix-currenttime)
     return 'V\0%s\0%s\0%s\0%s\0%s\0%s\0%s' % (V_mag, V_startUnix, V_loc1, V_maxUnix, V_loc2, V_endUnix, V_loc3)
 #     return 'VISIBLE'
   else:
-    print 'Regular pass no. %s, which is %s seconds in the future @ %s' % (All_rowCount, A_startUnix-currenttime, A_start.strftime('%d/%m %H:%M:%S'))
+    print 'Regular pass no. %s is %s seconds in the future' % (Regular_rowCount, A_startUnix-currenttime)
     return 'R\0%s\0%s\0%s\0%s\0%s\0%s' % (A_startUnix, A_loc1, A_maxUnix, A_loc2, A_endUnix, A_loc3)
 #     return 'REGULAR'
 
@@ -235,9 +218,8 @@ while True:
         data,addr = UDPSock.recvfrom(1024)
         remoteIP=IP(addr[0]).strNormal() #convert address of packet origin to string
         #print data.strip(),addr
-        print
-	print '  RX: "%s" @ %s from %s' % (data.rstrip('\n'), ctime(), remoteIP) 
+	print 'RX: %s @ %s from %s' % (data, ctime(), remoteIP) 
         if (data.strip() == 'respond'):
 		MESSAGE=ISS_PASS_GET()
                 UDPSock.sendto(MESSAGE, (remoteIP, remotePort))
-		print '  TX: %s' % (MESSAGE)
+		print 'TX: %s' % (MESSAGE)
