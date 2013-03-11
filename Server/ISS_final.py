@@ -13,9 +13,6 @@ import os, sys, envoy
 latitude = 56.156361
 longtitude = 10.188631
 elevation = 40		#meters above sea level
-#maxMag = 2         # show passes at least this bright - NOT USED for ALL PASSES PAGE lookup
-#minAlt = 0         # show passes at least this high
-#earliest = 0      # show passes after this hour of day
 
 # Parse a row of Heavens Above data and return the start date (datetime),
 # the beginning, peak, and end sky positions
