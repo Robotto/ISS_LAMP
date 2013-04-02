@@ -48,7 +48,7 @@ int UDPretryDelay = 0;
 int UDPretries = 0;
 
 //NTP stuff:
-boolean DST = false; //Daylight savings?
+boolean DST = true; //Daylight savings? (summertime)
 int GMT_plus = 1; //timezone offset from GMT
 
 //IPAddress timeServer(108, 61, 73, 244); //2.pool.ntp.dk NTP server: 108.61.73.244
@@ -247,26 +247,6 @@ LLLLLLLLLLLLLLLLLLLLLLLL   ooooooooooo      ooooooooooo    p::::::pppppppp
                                                           ppppppppp
 */
 
-void timekeeper(void)
-{
-          if(millis()>lastmillis+1000) //a second (or more) has passed
-          {
-            currentEpoch+=((millis()-lastmillis)/1000); //add  a second or more to the current epoch
-            lastmillis=millis();
-            standalone_seconds++;
-            if (keepcamlandcarryon) clock();
-          }
-
-          if(standalone_seconds>=30)
-          {
-          sendNTPpacket(timeServer);
-          UDPwait(false);
-          handle_ntp();
-          currentEpoch++; // meh.. calibration...
-          standalone_seconds=0;
-          }
-}
-
 void loop()
 {
 
@@ -275,6 +255,8 @@ void loop()
 //VFDdancingSmileyForever();
   
 timekeeper();
+
+if (keepcamlandcarryon) clock();
 
   
 /*
@@ -445,6 +427,61 @@ S:::::::::::::::SS     tt:::::::::::tt a::::::::::aa:::a       tt:::::::::::tt  
 }
 
 /*
+                         tttt            iiii  lllllll                          
+                      ttt:::t           i::::i l:::::l                          
+                      t:::::t            iiii  l:::::l                          
+                      t:::::t                  l:::::l                          
+uuuuuu    uuuuuuttttttt:::::ttttttt    iiiiiii  l::::l     ssssssssss           
+u::::u    u::::ut:::::::::::::::::t    i:::::i  l::::l   ss::::::::::s   :::::: 
+u::::u    u::::ut:::::::::::::::::t     i::::i  l::::l ss:::::::::::::s  :::::: 
+u::::u    u::::utttttt:::::::tttttt     i::::i  l::::l s::::::ssss:::::s :::::: 
+u::::u    u::::u      t:::::t           i::::i  l::::l  s:::::s  ssssss         
+u::::u    u::::u      t:::::t           i::::i  l::::l    s::::::s              
+u::::u    u::::u      t:::::t           i::::i  l::::l       s::::::s           
+u:::::uuuu:::::u      t:::::t    tttttt i::::i  l::::l ssssss   s:::::s  :::::: 
+u:::::::::::::::uu    t::::::tttt:::::ti::::::il::::::ls:::::ssss::::::s :::::: 
+ u:::::::::::::::u    tt::::::::::::::ti::::::il::::::ls::::::::::::::s  :::::: 
+  uu::::::::uu:::u      tt:::::::::::tti::::::il::::::l s:::::::::::ss          
+    uuuuuuuu  uuuu        ttttttttttt  iiiiiiiillllllll  sssssssssss            
+*/           
+
+void timekeeper(void)
+{
+          if(millis()>lastmillis+1000) //a second (or more) has passed
+          {
+            currentEpoch+=((millis()-lastmillis)/1000); //add  a second or more to the current epoch
+            lastmillis=millis();
+            standalone_seconds++;
+          }
+
+          if(standalone_seconds>=30)
+          {
+          sendNTPpacket(timeServer);
+          UDPwait(false);
+          handle_ntp();
+          currentEpoch++; // meh.. calibration...
+          standalone_seconds=0;
+          }
+}
+
+void errorclock(void)
+{
+  delay(3000);
+      VFDclear();
+      VFDchar(1,1); //set VFD position.
+      VFDchar(0,'!'); //set VFD position.
+      //VFDchar(0,0x16); //cursor off
+      VFDcursor(false);
+
+      while(1) 
+      {
+        
+        timekeeper();
+        clock();
+      }
+}
+
+/*
 PPPPPPPPPPPPPPPPP   WWWWWWWW                           WWWWWWWWMMMMMMMM               MMMMMMMM        
 P::::::::::::::::P  W::::::W                           W::::::WM:::::::M             M:::::::M        
 P::::::PPPPPP:::::P W::::::W                           W::::::WM::::::::M           M::::::::M        
@@ -553,16 +590,7 @@ while (!Udp.parsePacket())
     {
       VFDclear();
       VFDstring("No UDP RX for 25+sec, giving up.");
-      delay(3000);
-      VFDclear();
-      VFDchar(1,1); //set VFD position.
-      VFDchar(0,'!'); //set VFD position.
-      while(1) 
-      {
-        keepcamlandcarryon=true;
-        timekeeper();
-
-      }
+      errorclock();
     }
   }
 UDPretries=0;
@@ -643,7 +671,11 @@ void handle_ISS_udp()
 if (packetBuffer[0]=='V') passVisible=true; //stringcount=7; //VISIBLE PASS
 else if (packetBuffer[0]=='R') passVisible=false; //stringcount=6; //REGULAR PASS
 
-else { VFDstring("Bad data from robottobox, aborting :("); while(1){}}
+else 
+  { 
+  VFDstring("Bad data from robottobox, aborting :("); 
+  errorclock();
+  }
 
 
 byte *startp=packetBuffer;
@@ -875,8 +907,8 @@ V::::::V           V::::::VFF::::::FFFFFFFFF::::FDDD:::::DDDDD:::::D
 //VFD STUFF:
 void VFDsetup()
 {
-VFD_data_pins[0] = 1; //D7 - 9
-VFD_data_pins[1] = 0; //D6 - 8
+VFD_data_pins[0] = 1; //D7 - used to be 9
+VFD_data_pins[1] = 0; //D6 - used to be 8
 VFD_data_pins[2] = 7; //D5
 VFD_data_pins[3] = 6; //D4
 VFD_data_pins[4] = 5; //D3
@@ -912,7 +944,7 @@ digitalWrite(WR,HIGH);
 
 VFDreset();
 
-VFDchar(0,0x17); //flashing carriage
+VFDcursor(true);
 
 VFDscrollMode(true);
 }
@@ -934,6 +966,12 @@ void VFDclear()
 void VFDscrollMode(boolean onoff)
 {
  if(onoff)  VFDchar(0,0x13); else VFDchar(0,0x11);
+}
+
+void VFDcursor(boolean onoff)
+{
+  if(onoff) VFDchar(0,0x17); //flashing carriage
+  else VFDchar(0,0x16); //cursor off
 }
 
 void VFDsetpos(byte position) //0-40 decimal
@@ -1036,7 +1074,7 @@ void VFDsetDataport(unsigned char byte_of_doom)
 
 void VFDdancingSmileyForever()
 {
-    VFDchar(0,0x16); //cursor off
+    VFDcursor(false);
     VFDsmileyMake();
     
     while(1)
