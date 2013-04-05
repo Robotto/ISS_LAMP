@@ -1,0 +1,294 @@
+%!PS
+%
+% flexbox.ps
+% A 3 piece flexible box that can be laser cut from semi-rigid materials
+%
+% by Brian Dahlem
+% based on the simple box - type 2 by FdS - http://www.thingiverse.com/thing:14018
+% using the sninge technique from snijlab - http://www.thingiverse.com/thing:12707
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% The following lines define basic information about your box, change as necessary
+
+% Define basic measurement units -- don't change
+/inch {72 mul} def
+/cm {28.3465 mul} def
+
+% Define box parameters -- This is the size of the box you want
+/boxlength 4 inch def         % long dimension of flat side of the box
+/boxwidth 2.25 inch def          % dimension across the hinge
+/boxheight 2 inch def         % short dimension across flat side of the box
+/cornerradius 0.5 inch def        % radius of the hinge
+/materialthickness 0.125 inch def % thickness of the material which will become the box walls
+/tabwidth materialthickness 2 mul def		  % suggested width of tabs in the joints
+
+% Define the laser cutter page size
+/pagewidth 24 inch def
+/pageheight 12 inch def
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Here down is the code that makes your pretty little box, change only if you dare.
+%
+% Warning... it gets ugly ahead
+
+% setup the page
+<< /PageSize [pagewidth pageheight] >> setpagedevice % Set the pagesize, only sometimes works?  Good enough for gov't
+
+/border materialthickness def   % Move away from the edge of the material, for that nice scorched edges goodness
+0 pageheight translate
+1 -1 scale
+border border translate
+
+0 setlinewidth        % Setup to make vector cuts with hairline thickness
+0 0 0 setrgbcolor     % Use black for cutouts, because that makes the most sense
+
+% draw a rectangle
+/box {                % Draw a box with a given width and height from the current location
+  /height exch def
+  /width exch def
+
+  0 height rlineto
+  width 0 rlineto
+  0 height neg rlineto
+  width neg 0 rlineto  
+} def
+
+% Some basics...
+/min { 2 copy gt { exch } if pop } bind def
+/max { 2 copy lt { exch } if pop } bind def
+/pi 3.14159 def
+
+% Define some features of the box
+/innerradius cornerradius materialthickness sub def  % The radius of the corners minus the thickness of the material
+/tablen materialthickness def                        % How tall to make tabs
+/toplen boxlength cornerradius 2 mul sub def         % How long is the top / bottom side
+/frontheight boxheight tablen 2 mul sub def          % How tall is the front face, minus tabs
+/frontwidth boxlength tablen 2 mul sub def           % How wide is the front face, minus tabs
+/sideheight boxheight cornerradius 2 mul sub def     % How tall are the sides, not counting hinges
+/hingelen innerradius 2 div pi mul def               % How long is a flattened out hinge (the circumference of 1/4 inner radius)
+
+/breaklen materialthickness 2 div def                % How long should breaks in the hinge lines be
+/numhingelines boxwidth 96 div ceiling def           % How many segments should there be in a hinge line
+/winglen toplen 2 div hingelen 2 mul sideheight add add def  % How long a wing of the drawing is when drawn out flat
+
+% Draw 1/2 of the top, one "flap" of the lid
+/drawflap {
+  newpath 
+    toplen 2 div 0 moveto    % Start at the end of the flap closest to the body
+    tabwidth 2 mul 0 lineto  % draw the edge up to the tab
+    0 tablen rlineto         % cut in a tab
+    tabwidth neg 0 rlineto
+    0 tablen neg rlineto     % and back out to lock it
+    tabwidth neg 0 rlineto
+    0 boxwidth rlineto       % draw the end of the top flap
+    tabwidth 0 rlineto       % and draw the locking tabs
+    0 tablen neg rlineto
+    tabwidth 0 rlineto
+    0 tablen rlineto
+    toplen 2 div boxwidth lineto  % finish by returning to the body end of the flap
+  stroke
+} def
+
+% Draw a hinge line going all the way across the hinge
+/longline {
+  /linelen boxwidth numhingelines breaklen 2 mul sub numhingelines div def  % How long is a segment in a long line?
+
+  % Draw 1/2 a line to start
+  0 linelen 2 div rlineto
+
+  % Fill in the space with full lines
+  2 1 numhingelines {
+    0 breaklen 2 mul rmoveto
+    0 linelen rlineto
+  } for
+
+  % Draw the last half line to even it out
+  0 breaklen 2 mul rmoveto
+  0 linelen 2 div rlineto
+
+} def
+
+% Draw a hinge line with end caps
+/shortline {
+  /linelen boxwidth numhingelines 1 sub breaklen 2 mul mul breaklen 2 mul add sub numhingelines div def
+
+  % Skip a break then fill the space with evenly spaced lines
+  0 breaklen neg rmoveto
+  1 1 numhingelines {
+    0 linelen neg rlineto
+    0 breaklen 2 mul neg rmoveto
+  } for
+} def
+
+% Draw a flattened out hinge - alternating short and long lines
+/drawhinge {
+  /minwidth materialthickness def            % the minimum width for a hinge section (2 lines)
+  /numbars hingelen minwidth div floor def   % the number of hinge sections per hinge
+  /barwidth hingelen numbars div def         % the actual width of a hinge section
+
+  newpath
+    0 boxwidth moveto                        % start at the bottom of the hinge and draw a short line
+    shortline
+ 
+    1 1 numbars {                            % for each of the sections in the hinge
+      /i exch def
+      i barwidth mul barwidth 2 div sub 0 moveto  % move to the middle of the section and draw
+      longline                                    % a long line to split the section in half
+      i barwidth mul boxwidth moveto              % move to the end of the section and
+      shortline                                   % draw a shortline to connect to the next section
+    } for
+  stroke
+  
+  newpath
+    0 0 moveto                               % draw the sides of the hinge
+    hingelen 0 rlineto
+    0 boxwidth rmoveto
+    hingelen neg 0 rlineto
+  stroke
+} def
+
+% Draw an edge of the box, using tabs to connect to the front/back if the side is large enough
+/drawendedge {
+  /numtabs sideheight tabwidth div 2 div ceiling 2 mul 1 add def  % how many tabs to connect to front
+  /tabsize sideheight numtabs div def                             % how big should the tabs be
+
+  newpath
+    0 0 moveto                 % Move to the top of the side
+    tabsize 0 rlineto          % draw the first tab
+    1 1 numtabs 2 div {        % if there are more tabs
+      0 tablen rlineto         % draw the tab
+      tabsize 0 rlineto
+      0 tablen neg rlineto     % then return to the side
+      tabsize 0 rlineto        % for the slot
+    } for
+  stroke
+} def
+
+% Draw an end of the box horizontally
+/drawend {
+  gsave
+    drawendedge                     % Only draw the 2 edges of the end not connected to the hinges
+    sideheight boxwidth translate
+    -1 -1 scale
+    drawendedge
+  grestore
+} def
+
+% Draw a "wing" of the box, consisting of 1/2 the top, 2 hinges and a side
+/drawwing {
+  % Draw the two hinges before drawing the outline of the wing - use this order for laser cutting betterment
+  gsave
+    toplen 2 div 0 translate  % Skip over the flap
+    drawhinge                 % Draw a hinge
+    hingelen sideheight add 0 translate % Skip over the end/side
+    drawhinge                 % Draw a hinge
+  grestore
+  gsave                       % Go back to the beginning of the wing
+    drawflap                  % Draw the top flap
+    toplen 2 div hingelen add 0 translate % skip over the hinge
+    drawend                   % Draw the end
+  grestore
+} def
+
+
+% Draw the front/back side of the box
+/drawfront {
+  /numtabs toplen tabwidth div 2 div floor 2 mul 1 add def  % How many tabs (odd number) connect the bottom to the front
+  /tabsize toplen numtabs div def                           % How big are those tabs
+
+  gsave
+    tablen tablen translate
+
+    % Connect the front side to the bottom with tabs
+    newpath
+      innerradius frontheight moveto   % Start at the bottom, inside of the curved corner
+      tabsize 0 rlineto                % draw tabs and slots along the bottom line of the front
+      1 1 numtabs 2 div { 
+        0 tablen rlineto
+        tabsize 0 rlineto
+        0 tablen neg rlineto
+        tabsize 0 rlineto 
+      } for
+      frontwidth innerradius sub frontheight moveto  % draw the corner at the bottom right of the front
+      frontwidth innerradius sub frontheight innerradius sub innerradius 90 0 arcn
+    stroke
+
+    % draw a corner radius then the side connecting one end to the front
+    gsave
+      frontwidth frontheight innerradius sub translate % move to the bottom of the right edge
+      270 rotate
+      drawendedge  % draw the edge connecting the front and an end
+    grestore
+
+    % draw another corner radius, the side connecting the top flaps to the front, and another corner
+    newpath
+      frontwidth innerradius sub innerradius innerradius 0 270 arcn  % draw the top right corner
+      toplen 2 div neg tabwidth 2 mul add 0 rlineto                  % draw the right half of the top
+      0 tablen neg rlineto                                           % stick out a tab to grab the top flap
+      tabwidth neg 0 rlineto
+      0 tablen rlineto                                               % Make a slot to hold both flaps' tabs
+      tabwidth 2 mul neg 0 rlineto                                 
+      0 tablen neg rlineto                                           % make a tab to grab the other flap
+      tabwidth neg 0 rlineto
+      0 tablen rlineto
+      innerradius 0 lineto                                           % then finish off the top of this side
+      innerradius innerradius innerradius 270 180 arcn               % with a top left corner
+    stroke
+ 
+    % draw the last side of the front, connecting the front to another end
+    gsave
+      0 innerradius translate   % below the corner
+      90 rotate
+      drawendedge               % draw the edge connecting with the left end
+    grestore
+
+    % finish off the front with the last corner radius
+    newpath
+      innerradius frontheight innerradius sub innerradius 180 90 arcn % draw the bottom left corner to finish this side
+    stroke
+  grestore  
+} def
+
+% Go ahead and actually draw the box
+
+% Draw the two wings - the top flaps and ends
+gsave
+  0 boxheight tablen sub translate   % line up the wing with the bottom of the box's front side
+  drawwing                           % draw the wing
+  2 toplen mul sideheight 2 mul add hingelen 4 mul add 0 translate  % skip over to the other side of the box
+  -1 1 scale
+  drawwing                                                          % and draw the other wing
+grestore
+
+% Draw the front and back of the box, connected up to the wings this also makes the bottom
+gsave
+  winglen cornerradius sub 0 translate  % line up the front so it will mesh with the wings
+  drawfront                             % and draw it
+  boxlength boxheight 2 mul boxwidth add tablen 2 mul sub translate  % similarly, line up the back
+  -1 -1 scale
+  drawfront                                                          % and draw it
+grestore
+
+% Print some nice welcoming text in a basic font to explain what is going on to the user
+/Times-Roman findfont 10 scalefont setfont
+
+.25 inch boxheight 2 mul boxwidth add .25 inch add translate
+1 -1 scale
+0 0 1 setrgbcolor
+0 0 moveto
+(Flexbox - this is a box that will be ) show
+boxlength 72 div (      ) cvs show
+( inches long x ) show
+boxwidth 72 div (      ) cvs show
+( inches wide x ) show
+boxheight 72 div (      ) cvs show
+( inches tall when cut out and put together.) show
+0 -18 moveto
+(If you would like to change the size of the box, edit the flexbox file in a text editor such as notepad ) show
+0 -28 moveto
+(then change the box length, width and height near the beginning of the file as you would like.) show
+
+% We're done here, lets go home.
+showpage
+%%EOF
