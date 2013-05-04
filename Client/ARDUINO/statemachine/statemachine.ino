@@ -70,7 +70,7 @@ int temp_vfd_position = 0;
 
 //ISS STUFF:
 boolean passVisible;
-boolean keepcamlandcarryon = true;
+boolean keepcalmandcarryon = true;
 boolean firstWarningGiven = false;
 boolean passInProgress = false;
 boolean ongoingPassEndInfoPrint = true;
@@ -82,6 +82,12 @@ unsigned long passStartEpoch;
 unsigned long passMaxEpoch;
 unsigned long passEndEpoch;
 unsigned long secs_to_next_pass;
+unsigned long hh_to_next_pass;
+unsigned long mm_to_next_pass;
+unsigned long ss_to_next_pass;
+
+boolean print_text=true;
+
 String passMagnitude;
 String passStartDir;
 String passMaxDir;
@@ -256,7 +262,48 @@ void loop()
   
 timekeeper();
 
-if (keepcamlandcarryon) clock();
+if (keepcalmandcarryon) 
+{
+  
+  if(print_text) //will break if more than 99 hours to next pass...
+  {
+  VFDclear();
+
+
+  if (passVisible)
+    {
+     VFDstring("Visible pass T-"); //15    
+    }
+  else
+    {
+    VFDstring("Regular pass    T-");
+    }
+
+    print_text=false;
+  }
+
+  if(passVisible) VFDsetpos(15);
+  else VFDsetpos(18);
+  
+  if(hh_to_next_pass<10) VFDchar(0,'0');
+  VFDstring(String(hh_to_next_pass));
+  VFDchar(0,':'); 
+  if(mm_to_next_pass<10) VFDchar(0,'0');
+  VFDstring(String(mm_to_next_pass));
+  VFDchar(0,':');
+  if(ss_to_next_pass<10) VFDchar(0,'0');
+  VFDstring(String(ss_to_next_pass));
+  
+
+  if (passVisible)
+  {
+    VFDstring(" M:");
+    VFDstring(passMagnitude);
+  }
+  clock();
+}
+
+  
 
   
 /*
@@ -280,13 +327,14 @@ S:::::::::::::::SS     tt:::::::::::tt a::::::::::aa:::a       tt:::::::::::tt  
   if (currentEpoch>=passEndEpoch) //PASS END!
   {
     VFDclear();
-    VFDstring("end of pass.");
+    VFDstring("End of pass.");
     PWM_ramp(false,512); //lights fade off
     VFDclear();
     sendISSpacket(robottobox); //ask robottobox for new iss data
     UDPwait(true);  
     handle_ISS_udp();
-    keepcamlandcarryon=true;
+    keepcalmandcarryon=true;
+    print_text=true;
     firstWarningGiven=false;
     passInProgress=false;
     ongoingPassEndInfoPrint=true;
@@ -343,7 +391,7 @@ S:::::::::::::::SS     tt:::::::::::tt a::::::::::aa:::a       tt:::::::::::tt  
 
   else if (currentEpoch>=passStartEpoch && passInProgress==false) //PASS START!
   {
-    keepcamlandcarryon=false;
+    keepcalmandcarryon=false;
     PWM_ramp(true,512); //lights fade on
     VFDclear();
     
@@ -421,6 +469,7 @@ S:::::::::::::::SS     tt:::::::::::tt a::::::::::aa:::a       tt:::::::::::tt  
         VFDclear();
       }
       firstWarningGiven=true;
+      print_text=true;
   }
 
 
@@ -447,12 +496,17 @@ u:::::::::::::::uu    t::::::tttt:::::ti::::::il::::::ls:::::ssss::::::s ::::::
 
 void timekeeper(void)
 {
-          if(millis()>lastmillis+1000) //a second (or more) has passed
-          {
+
+          while(millis()<lastmillis+1000) {} //WAIT FOR ABOUT A SECOND
+
+          //if(millis()>lastmillis+1000) //a second (or more) has passed
+          //{
             currentEpoch+=((millis()-lastmillis)/1000); //add  a second or more to the current epoch
             lastmillis=millis();
             standalone_seconds++;
-          }
+
+            secs_to_next_pass=passStartEpoch-currentEpoch;
+          //}
 
           if(standalone_seconds>=30)
           {
@@ -462,6 +516,11 @@ void timekeeper(void)
           currentEpoch++; // meh.. calibration...
           standalone_seconds=0;
           }
+
+          hh_to_next_pass=(secs_to_next_pass  % 86400L) / 3600;
+          mm_to_next_pass=(secs_to_next_pass % 3600) / 60;
+          ss_to_next_pass=secs_to_next_pass % 60;
+
 }
 
 void errorclock(void)
@@ -527,7 +586,11 @@ C:::::C                L:::::L               O:::::O     O:::::OC:::::C         
 */
 void clock()
 {
-  VFDchar(1,16); //set VFD position.
+
+                              //TODO: should check if time has changed befgore printing!
+
+  //VFDchar(1,30); //set VFD position.
+  VFDsetpos(32);
 
    // print the hour, minute and second:
   
@@ -772,7 +835,7 @@ else
     VFDstring(String(secs_to_next_pass));
     
    
-    delay(3500);
+    delay(1500);
     VFDclear();
     
     /*
@@ -996,11 +1059,11 @@ void VFDchar(int isCommand, unsigned char databyte)
 {
   if(isCommand==1) digitalWrite(A_0,HIGH); else digitalWrite(A_0,LOW);
   digitalWrite(WR,LOW);
-  delay(10);
+  delay(5);
   VFDsetDataport(databyte);
-  delay(10);
+  delay(5);
   digitalWrite(WR,HIGH);
-  delay(30);
+  delay(10);
 }
 
 void VFDflashyString(String inputstring)
