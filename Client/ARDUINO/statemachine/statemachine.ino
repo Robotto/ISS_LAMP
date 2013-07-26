@@ -85,6 +85,7 @@ unsigned long secs_to_next_pass;
 unsigned long hh_to_next_pass;
 unsigned long mm_to_next_pass;
 unsigned long ss_to_next_pass;
+int standalone_seconds=0;
 
 boolean print_text=true;
 
@@ -92,6 +93,13 @@ String passMagnitude;
 String passStartDir;
 String passMaxDir;
 String passEndDir;
+
+//PWM STUFF:
+int PWM_COUNTER=0;
+int PWM_PIN=9;
+unsigned long PWM_MILLIS=millis();
+boolean PWM_UP_DOWN=true; //true=up, false = down
+
 
 
 
@@ -133,11 +141,13 @@ void setup() {
   //Serial.begin(9600);
   
   PWM_ramp(true,1000);
-  PWM_ramp(false,1000);
+  //delay(1500);
+  
   
   // start the Ethernet connection:
   if (Ethernet.begin(mac) == 0) {
     VFDstring("Failed to configure Ethernet using DHCP!");
+    PWM_ramp(false,1000);
     // no point in carrying on, so do nothing forevermore:
     for(;;) 
       ;
@@ -155,7 +165,7 @@ void setup() {
     for(byte ip=1;ip<4;ip++){localIpString+='.'; localIpString+=String(Ethernet.localIP()[ip]);} //last 3 bytes
    
     VFDstring(localIpString);  
-    delay(500);
+    delay(1500);
     }
   
 
@@ -188,6 +198,7 @@ if (DNSSuccess == err) {
       } while (DNSTryLater == err);
     }
 
+delay(1000);
 //call the IP address constructor with the byte (uint8_t) array from the DNS lookup. BOOM!:
 timeServer = IPAddress(NTP_IP[0],NTP_IP[1],NTP_IP[2],NTP_IP[3]); 
 
@@ -197,7 +208,7 @@ sprintf(ipstringbuf, "%d.%d.%d.%d\0", NTP_IP[0], NTP_IP[1], NTP_IP[2], NTP_IP[3]
 VFDclear();
 VFDstring("NTP IP resolved: ");
 VFDstring(ipstringbuf);
-
+delay(1000);
 ///////////////// QUERY NTP //////////////
 VFDstring("   UDP TX -> NTP");
 sendNTPpacket(timeServer);
@@ -209,7 +220,7 @@ VFDstring("  NTP RX!!");
 handle_ntp();
 
 //////////////// ISS ///////////////
-
+delay(500);
 VFDclear();
 sendISSpacket(robottobox); //ask robottobox for iss data
 VFDstring("UDP TX -> Robottobox");
@@ -219,14 +230,11 @@ VFDstring("  ISS RX!!");
 handle_ISS_udp();
 
 VFDchar(0,0x16); //cursor off.
+
+PWM_ramp(false,1000); //lights ramp down
+
 }
 
-int standalone_seconds=0;
-
-int PWM_COUNTER=0;
-int PWM_PIN=9;
-unsigned long PWM_MILLIS=millis();
-boolean PWM_UP_DOWN=true; //true=up, false = down
 
 /*
 LLLLLLLLLLL                                                                           
@@ -386,6 +394,8 @@ S:::::::::::::::SS     tt:::::::::::tt a::::::::::aa:::a       tt:::::::::::tt  
      // delay(100); ///////////////////////////////////////////////////////////////////////////////////////////////////////////// <-DELAY
       
       }
+
+    else clock(); //if pass is not visible, but underway.
   }
 
 
@@ -417,7 +427,12 @@ S:::::::::::::::SS     tt:::::::::::tt a::::::::::aa:::a       tt:::::::::::tt  
         delay(1000);
   
       }
-    else VFDstring("Non-visible pass in progress.");
+    else 
+      {
+      VFDstring("Non-visible pass in progress.");
+      clock();
+      }
+
     passInProgress=true;
   }
 
@@ -461,7 +476,7 @@ S:::::::::::::::SS     tt:::::::::::tt a::::::::::aa:::a       tt:::::::::::tt  
         VFDstring(" End: ");
         VFDstring(passEndDir);
 
-            delay(500);
+            delay(1500);
 
         //oh! and blinkenlights!
         PWM_ramp(false,2048); //lights on
@@ -523,8 +538,11 @@ void timekeeper(void)
 
 }
 
+void(* resetFunc) (void) = 0; //declare reset function @ address 0
+
 void errorclock(void)
 {
+  unsigned int error_seconds=0;
   delay(3000);
       VFDclear();
       VFDchar(1,1); //set VFD position.
@@ -534,9 +552,14 @@ void errorclock(void)
 
       while(1) 
       {
+        while(millis()<lastmillis+1000) {} //WAIT FOR ABOUT A SECOND
+        currentEpoch+=((millis()-lastmillis)/1000); //add  a second or more to the current epoch
+        lastmillis=millis();
+        error_seconds++;
         
-        timekeeper();
         clock();
+            
+        if (error_seconds>120) resetFunc();  //call reset
       }
 }
 
@@ -561,7 +584,7 @@ PPPPPPPPPP                      WWW             WWW            MMMMMMMM         
 
 void PWM_ramp(boolean direction, unsigned long duration_ms) //true=up/false=down , duration in millisecs
 {
-  //this may seem reversed, but the hardware that drives the LED's inverts the PWM, so that 100% is full off.
+  //this may seem reversed, but the hardware that drives the LED's inverts the PWM, so that 100% is (almost) full off.
   if(direction) for (int i = 255; i > 0; i--) {analogWrite(PWM_PIN,i); delay(duration_ms>>8);} //(duration_m/255)
   else for (int i = 0; i < 255; i++) {analogWrite(PWM_PIN,i); delay(duration_ms>>8);}
 }
@@ -599,7 +622,10 @@ void clock()
     unsigned long minutes=((currentEpoch % 3600) / 60);
     unsigned long seconds= (currentEpoch % 60);
     
+    if (hours>23) hours=hours-24; //offset check since GMT and DST offsets are added after modulo
+
     if(hours<10) VFDchar(0,'0'); //add leading '0' to hours lower than 10
+    
     VFDstring(String(hours)); // print the hour
 
     VFDchar(0,':');  
@@ -649,10 +675,10 @@ while (!Udp.parsePacket())
       UDPretryDelay=0;
 //      VFDchar(0,'.');
     }
-  if(UDPretries==5)
+  if(UDPretries==10)
     {
       VFDclear();
-      VFDstring("No UDP RX for 25+sec, giving up.");
+      VFDstring("No UDP RX for 50+sec, giving up.");
       errorclock();
     }
   }
@@ -752,7 +778,7 @@ if (passVisible)
   {
     VFDclear();
     VFDstring("NEXT PASS IS VISIBLE!");
-    delay(300);
+    delay(1500);
     VFDclear();
   
    //MAGNITUDE
@@ -765,7 +791,7 @@ else
   {
     VFDclear();
     VFDstring("Next pass not visible. ");
-    delay(300);
+    delay(1500);
     VFDclear();
   }
     //START TIME:
@@ -835,7 +861,7 @@ else
     VFDstring(String(secs_to_next_pass));
     
    
-    delay(1500);
+    delay(2500);
     VFDclear();
     
     /*
@@ -1059,11 +1085,11 @@ void VFDchar(int isCommand, unsigned char databyte)
 {
   if(isCommand==1) digitalWrite(A_0,HIGH); else digitalWrite(A_0,LOW);
   digitalWrite(WR,LOW);
-  delay(5);
+  delay(1);
   VFDsetDataport(databyte);
-  delay(5);
+  delay(1);
   digitalWrite(WR,HIGH);
-  delay(10);
+  delay(1);
 }
 
 void VFDflashyString(String inputstring)
