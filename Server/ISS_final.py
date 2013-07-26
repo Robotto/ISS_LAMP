@@ -14,6 +14,10 @@ latitude = 56.156361
 longtitude = 10.188631
 elevation = 40		#meters above sea level
 
+#OHM:
+#latitude = 52.69389
+#longtitude = 4.75225
+
 # Parse a row of Heavens Above data and return the start date (datetime),
 # the beginning, peak, and end sky positions
 # (strings).

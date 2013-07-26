@@ -31,7 +31,7 @@ while True:
         if (data.strip() == 'respond'):
 		currenttime = int(time())
 		#start in 60 seconds
-		tstart = currenttime - 20
+		tstart = currenttime + 60
 		#max is 60 seconds later
 		tmax = tstart + 60
 		#end is 60 seconds after that
