@@ -10,13 +10,13 @@ import os, sys, envoy
 
 
 # Personalization.
-latitude = 56.156361
-longtitude = 10.188631
+#latitude = 56.156361
+#longtitude = 10.188631
 elevation = 40		#meters above sea level
 
 #OHM:
-#latitude = 52.69389
-#longtitude = 4.75225
+latitude = 52.6925433
+longtitude = 4.7553544
 
 # Parse a row of Heavens Above data and return the start date (datetime),
 # the beginning, peak, and end sky positions
@@ -197,10 +197,17 @@ def ISS_PASS_GET():
     print 'Checked visible pass no. %s for past timecode' % (Visible_rowCount)
   
 	
-  #check if it's the same pass and if so print the visible one!
   print 'The next pass of the ISS above %s, %s is:' % (latitude, longtitude)
 
-  if (V_startUnix==A_startUnix):
+  #check if it's the same pass and if so print the visible one!
+  #Regular (non visible) passes always start at 10degrees above the horizon, and since visible passes are a subset of regular passes,
+  #A visible pass will sometimes have a later timecode in the 'visible table' than in the 'all table', since a visible pass might start higher in the sky,
+  #and therefore later. Even though it's the same pass in the two tables, the non visible one would take precedence, since it would have an earlier timecode
+  #luckily, we know for a fact that there is no less than ~1½ hours between passes, which gives us plenty of wiggle room to determine whether the two passes
+  #are actually the same.. 
+  #therefore we check to see whether a visible pass starts up to 10 minutes (600 seconds) after a regular pass, and if so: Give the visual pass precedence
+
+  if (V_startUnix+600<A_startUnix):
     print 'Visible pass no. %s, which is %s seconds in the future @ %s' % (Visible_rowCount, V_startUnix-currenttime, V_start.strftime('%d/%m %H:%M:%S'))
     return 'V\0%s\0%s\0%s\0%s\0%s\0%s\0%s' % (V_mag, V_startUnix, V_loc1, V_maxUnix, V_loc2, V_endUnix, V_loc3)
 #     return 'VISIBLE'
