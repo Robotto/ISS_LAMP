@@ -10,13 +10,13 @@ import os, sys, envoy
 
 
 # Personalization.
-#latitude = 56.156361
-#longtitude = 10.188631
+latitude = 56.156361
+longtitude = 10.188631
 elevation = 40		#meters above sea level
 
 #OHM:
-latitude = 52.6925433
-longtitude = 4.7553544
+#latitude = 52.6925433
+#longtitude = 4.7553544
 
 # Parse a row of Heavens Above data and return the start date (datetime),
 # the beginning, peak, and end sky positions
