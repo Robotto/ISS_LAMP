@@ -33,6 +33,7 @@ IPAddress robottobox(62,212,66,171); //IP address constructor
 byte dnsServerIp[] = { 8, 8, 8, 8}; //Google DNS.
 byte NTP_IP[4]; //contains result of DNS lookup, to be sent to the IPAddress constructor
 char NTP_hostName[] = "dk.pool.ntp.org"; //should init with a null-char termination.
+//char NTP_hostName[] = "nl.pool.ntp.org"; //should init with a null-char termination.
 
 // Initialize the Ethernet client library
 EthernetClient client;
@@ -177,6 +178,8 @@ VFDclear();
 ///////////////// LOOKUP NTP IP //////////////
 EthernetDNS.setDNSServer(dnsServerIp);
 VFDstring("DNS resolve: dk.pool.ntp.org");
+//VFDstring("DNS resolve: nl.pool.ntp.org");
+
 DNSError err = EthernetDNS.sendDNSQuery(NTP_hostName);
 
 if (DNSSuccess == err) {
