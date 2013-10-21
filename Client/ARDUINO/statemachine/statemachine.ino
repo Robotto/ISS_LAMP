@@ -545,6 +545,7 @@ void(* resetFunc) (void) = 0; //declare reset function @ address 0
 
 void errorclock(void)
 {
+  PWM_ramp(false, 8000); //lights off
   unsigned int error_seconds=0;
   delay(3000);
       VFDclear();
