@@ -6,6 +6,8 @@ using an Arduino Wiznet Ethernet shield.
 
 and ALSO NTP time from the danish NTP pool.
 
+and now a check to see if daylight savings time is active
+
 Also: VFD!
 And Also: PWM!
 and now: DNS LOOKUP for the NTP!
@@ -49,7 +51,7 @@ int UDPretryDelay = 0;
 int UDPretries = 0;
 
 //NTP stuff:
-boolean DST = true; //Daylight savings? (summertime)
+boolean DST = false; //Daylight savings? (summertime)
 int GMT_plus = 1; //timezone offset from GMT
 
 //IPAddress timeServer(108, 61, 73, 244); //2.pool.ntp.dk NTP server: 108.61.73.244
@@ -99,7 +101,6 @@ String passEndDir;
 int PWM_COUNTER=0;
 int PWM_PIN=9;
 unsigned long PWM_MILLIS=millis();
-boolean PWM_UP_DOWN=true; //true=up, false = down
 
 
 
@@ -141,14 +142,14 @@ void setup() {
 
   //Serial.begin(9600);
   
-  PWM_ramp(true,1000);
+  PWM_ramp(true);
   //delay(1500);
   
   
   // start the Ethernet connection:
   if (Ethernet.begin(mac) == 0) {
     VFDstring("Failed to configure Ethernet using DHCP!");
-    PWM_ramp(false,1000);
+    PWM_ramp(false);
     // no point in carrying on, so do nothing forevermore:
     for(;;) 
       ;
@@ -222,11 +223,12 @@ VFDstring("  NTP RX!!");
 
 handle_ntp();
 
+
 //////////////// ISS ///////////////
 delay(500);
 VFDclear();
 sendISSpacket(robottobox); //ask robottobox for iss data
-VFDstring("UDP TX -> Robottobox");
+VFDstring("ISS TX -> Robottobox");
 
 UDPwait(true);  
 VFDstring("  ISS RX!!");
@@ -234,7 +236,7 @@ handle_ISS_udp();
 
 VFDchar(0,0x16); //cursor off.
 
-PWM_ramp(false,1000); //lights ramp down
+PWM_ramp(false); //lights ramp down
 
 }
 
@@ -339,7 +341,7 @@ S:::::::::::::::SS     tt:::::::::::tt a::::::::::aa:::a       tt:::::::::::tt  
   {
     VFDclear();
     VFDstring("End of pass.");
-    PWM_ramp(false,512); //lights fade off
+    PWM_ramp(false); //lights fade off
     VFDclear();
     sendISSpacket(robottobox); //ask robottobox for new iss data
     UDPwait(true);  
@@ -405,7 +407,7 @@ S:::::::::::::::SS     tt:::::::::::tt a::::::::::aa:::a       tt:::::::::::tt  
   else if (currentEpoch>=passStartEpoch && passInProgress==false) //PASS START!
   {
     keepcalmandcarryon=false;
-    PWM_ramp(true,512); //lights fade on
+    PWM_ramp(true); //lights fade on
     VFDclear();
     
 
@@ -439,6 +441,7 @@ S:::::::::::::::SS     tt:::::::::::tt a::::::::::aa:::a       tt:::::::::::tt  
     passInProgress=true;
   }
 
+  
   else if ((currentEpoch>=(passStartEpoch-300)) && firstWarningGiven==false) //5 Minutes (or less) till next pass
   {
     if (passVisible) 
@@ -448,41 +451,41 @@ S:::::::::::::::SS     tt:::::::::::tt a::::::::::aa:::a       tt:::::::::::tt  
         
         VFDscrollMode(true);
 
-        PWM_ramp(true,2048); //lights on
+        PWM_ramp(true); //lights on
         
         VFDclear();
         VFDstring("Visible pass in: ");
         VFDstring(String((int)(passStartEpoch-currentEpoch)));
         VFDstring(" seconds ");
 
-        delay(500);
+        delay(1500);
 
         VFDstring("  Magnitude: ");
         VFDstring(passMagnitude);
 
-        delay(500);
+        delay(1500);
 
         //ADD INFO ABOUT PASS!
 
         VFDstring(" Start: ");
         VFDstring(passStartDir);
 
-             delay(500);
+             delay(1500);
  
 
         VFDstring(" Max: ");
         VFDstring(passMaxDir);
 
-             delay(500);
+             delay(1500);
 
         
         VFDstring(" End: ");
         VFDstring(passEndDir);
 
-            delay(1500);
+            delay(2500);
 
         //oh! and blinkenlights!
-        PWM_ramp(false,2048); //lights on
+        PWM_ramp(false); //lights off
         VFDscrollMode(false);
         VFDclear();
       }
@@ -545,12 +548,12 @@ void(* resetFunc) (void) = 0; //declare reset function @ address 0
 
 void errorclock(void)
 {
-  PWM_ramp(false, 8000); //lights off
+  PWM_ramp(false); //lights off
   unsigned int error_seconds=0;
   delay(3000);
       VFDclear();
       VFDchar(1,1); //set VFD position.
-      VFDchar(0,'!'); //set VFD position.
+      VFDchar(0,'!'); //print error indicator
       //VFDchar(0,0x16); //cursor off
       VFDcursor(false);
 
@@ -563,7 +566,7 @@ void errorclock(void)
         
         clock();
             
-        if (error_seconds>120) resetFunc();  //call reset
+        if (error_seconds>120) resetFunc();  //call reset after 2 minutes
       }
 }
 
@@ -585,12 +588,21 @@ P::::::::P                    W:::::W         W:::::W          M::::::M         
 P::::::::P                     W:::W           W:::W           M::::::M               M::::::M        
 PPPPPPPPPP                      WWW             WWW            MMMMMMMM               MMMMMMMM 
 */
-
+/*
 void PWM_ramp(boolean direction, unsigned long duration_ms) //true=up/false=down , duration in millisecs
 {
   //this may seem reversed, but the hardware that drives the LED's inverts the PWM, so that 100% is (almost) full off.
   if(direction) for (int i = 255; i > 0; i--) {analogWrite(PWM_PIN,i); delay(duration_ms>>8);} //(duration_m/255)
   else for (int i = 0; i < 255; i++) {analogWrite(PWM_PIN,i); delay(duration_ms>>8);}
+}
+*/
+
+void PWM_ramp(boolean direction) //true=up/false=down , duration in millisecs
+{
+  //this may seem reversed, but the hardware that drives the LED's inverts the PWM, so that 100% is (almost) full off.
+  int i;
+  if(direction) for (i = 255; i > 0; i--) {analogWrite(PWM_PIN,i); delay(15);} //(duration_m/255)
+  else for (i = 0; i < 255; i++) {analogWrite(PWM_PIN,i); delay(15);}
 }
 
 /*
@@ -611,6 +623,7 @@ C:::::C                L:::::L               O:::::O     O:::::OC:::::C         
      CCC::::::::::::CL::::::::::::::::::::::L   OO:::::::::OO        CCC::::::::::::CK:::::::K    K:::::K        
         CCCCCCCCCCCCCLLLLLLLLLLLLLLLLLLLLLLLL     OOOOOOOOO             CCCCCCCCCCCCCKKKKKKKKK    KKKKKKK
 */
+
 void clock()
 {
 
@@ -716,16 +729,13 @@ unsigned long sendISSpacket(IPAddress& address)
 
   memset(packetBuffer, 0, NTP_PACKET_SIZE); 
 
-  packetBuffer[0] = 'r';
-  packetBuffer[1] = 'e';
+  packetBuffer[0] = 'i';
+  packetBuffer[1] = 's';
   packetBuffer[2] = 's';
-  packetBuffer[3] = 'p';
-  packetBuffer[4] = 'o';
-  packetBuffer[5] = 'n';
-  packetBuffer[6] = 'd';
+  packetBuffer[3] = '?';
 
   Udp.beginPacket(address, 1337); //remote port: 1337
-  Udp.write(packetBuffer,7); //push the 7 bytes
+  Udp.write(packetBuffer,4); //push the 4 bytes
   Udp.endPacket(); 
 }
 
@@ -760,7 +770,6 @@ void handle_ISS_udp()
 //    VFDclear();
 
 
-
 if (packetBuffer[0]=='V') passVisible=true; //stringcount=7; //VISIBLE PASS
 else if (packetBuffer[0]=='R') passVisible=false; //stringcount=6; //REGULAR PASS
 
@@ -770,11 +779,15 @@ else
   errorclock();
   }
 
+if (packetBuffer[2]=='1') DST = true;
+else if (packetBuffer[2]=='0') DST = false;
+
 
 byte *startp=packetBuffer;
 
-//jump the first char and the following '/0'
-startp+=2;
+//jump the visibility and DST indicator bytes and their respective \null chars
+
+startp+=4;
     
 char Epoch_TEMP[12]; //holds strings so they can be converted to a number
 
@@ -951,7 +964,7 @@ NNNNNNNN         NNNNNNN      TTTTTTTTTTT      PPPPPPPPPP               RRRRRRRR
 */
 void handle_ntp()
 {
-// We've received a packet, read the data from it
+    // We've received a packet, read the data from it
     Udp.read(packetBuffer,NTP_PACKET_SIZE);  // read the packet into the buffer
 
     //the timestamp starts at byte 40 of the received packet and is four bytes,
@@ -964,7 +977,7 @@ void handle_ntp()
     unsigned long secsSince1900 = highWord << 16 | lowWord;  
     
     // now convert NTP time into everyday time:
-//    VFDstring("Current unix time = ");
+    // VFDstring("Current unix time = ");
 
 	// Unix time starts on Jan 1 1970. In seconds, that's 2208988800:
     const unsigned long seventyYears = 2208988800UL;     
@@ -1071,7 +1084,7 @@ void VFDsetpos(byte position) //0-40 decimal
 {
  VFDchar(1,position); 
 }
-
+/*
 void VFDsmileyMake()
 {
   VFDchar(0,0x1b); //ESC
@@ -1083,7 +1096,7 @@ void VFDsmileyMake()
   VFDchar(0,0b00111000);
 //  VFDchar(0,customcharposition);  //print
 }
-
+*/
 
 void VFDchar(int isCommand, unsigned char databyte)
 {
@@ -1095,13 +1108,14 @@ void VFDchar(int isCommand, unsigned char databyte)
   digitalWrite(WR,HIGH);
   delay(1);
 }
-
+/*
 void VFDflashyString(String inputstring)
 {
  VFDchar(0,0x06); //start of flashy string
  VFDstring(inputstring);
  VFDchar(0,0x07); //end of flashy string 
 }
+*/
 
 void VFDstring(String inputstring)
 {
@@ -1164,7 +1178,7 @@ void VFDsetDataport(unsigned char byte_of_doom)
      digitalWrite(VFD_data_pins[i], (byte_of_doom >> i) & 0x01);
     }
 }
-
+/*
 void VFDdancingSmileyForever()
 {
     VFDcursor(false);
@@ -1175,4 +1189,6 @@ void VFDdancingSmileyForever()
     for(int i=0;i<39;i++) { VFDchar(1,i); VFDchar(0,customcharposition); VFDchar(0,0x08); VFDchar(0,' ');}
     for(int i=41;i!=0;i--) { VFDchar(1,i); VFDchar(0,customcharposition); VFDchar(0,0x08); VFDchar(0,' ');}
     }
+    
 }
+*/
