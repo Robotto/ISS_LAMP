@@ -4,7 +4,7 @@
 import mechanize
 from BeautifulSoup import BeautifulSoup
 from datetime import datetime, date, timedelta
-from time import strftime, strptime, mktime, struct_time, time, ctime
+from time import strftime, strptime, mktime, struct_time, time, ctime, localtime
 from getopt import getopt
 import os, sys, envoy
 
@@ -72,8 +72,9 @@ def ISS_PASS_GET():
   issAllURL = 'http://heavens-above.com/PassSummary.aspx?showAll=t&satid=25544&lat=%s&lng=%s&alt=%s&tz=CET' %(latitude, longtitude, elevation)
   issVisibleURL = 'http://heavens-above.com/PassSummary.aspx?showAll=f&satid=25544&lat=%s&lng=%s&alt=%s&tz=CET' %(latitude, longtitude, elevation)
 
-  #issAllURL = 'http://127.0.0.1/all_test_page.htm'
-  #issVisibleURL = 'http://127.0.0.1/visible_test_page.htm'
+#TEST PAGES:
+#  issAllURL = 'http://127.0.0.1/all_test_page.htm'
+#  issVisibleURL = 'http://127.0.0.1/visible_test_page.htm'
 
   # Create virtual browser and get page.
   br = mechanize.Browser()
@@ -162,11 +163,13 @@ def ISS_PASS_GET():
   #print
   #print
 
-
   #Printing:
   currenttime = int(time())
 
-#  print 'DEBUG: Current unix time: %s' % (currenttime)
+  #DEBUG: mathced with test pages so that next pass is visible and occcurs in 19 seconds:
+  #currenttime =  1376339150
+
+  print 'DEBUG: Current unix time: %s' % (currenttime)
 
 
   #set up som startup values for the pass starttimes:
@@ -183,7 +186,7 @@ def ISS_PASS_GET():
 
     All_rowCount+=1
 
-    print 'Checked pass no. %s for past timecode' % (All_rowCount)
+    print 'Checked pass no. %s for past timecode: %s' % (All_rowCount, A_startUnix)
   
   
   #get data for the next visible pass:
@@ -194,7 +197,7 @@ def ISS_PASS_GET():
 
     Visible_rowCount+=1
 
-    print 'Checked visible pass no. %s for past timecode' % (Visible_rowCount)
+    print 'Checked visible pass no. %s for past timecode: %s' % (Visible_rowCount, V_startUnix)
   
 	
   print 'The next pass of the ISS above %s, %s is:' % (latitude, longtitude)
@@ -207,7 +210,8 @@ def ISS_PASS_GET():
   #are actually the same.. 
   #therefore we check to see whether a visible pass starts up to 10 minutes (600 seconds) after a regular pass, and if so: Give the visual pass precedence
 
-  if (V_startUnix+600<A_startUnix):
+  #also: if no visible passes are in the data from HA. V_startUnix is set to curenttime, in order to end the while loop, this needs to be checked for:
+  if (A_startUnix+600>V_startUnix & V_startUnix!=currenttime):
     print 'Visible pass no. %s, which is %s seconds in the future @ %s' % (Visible_rowCount, V_startUnix-currenttime, V_start.strftime('%d/%m %H:%M:%S'))
     return 'V\0%s\0%s\0%s\0%s\0%s\0%s\0%s' % (V_mag, V_startUnix, V_loc1, V_maxUnix, V_loc2, V_endUnix, V_loc3)
 #     return 'VISIBLE'
@@ -245,7 +249,12 @@ while True:
         #print data.strip(),addr
         print
 	print '  RX: "%s" @ %s from %s' % (data.rstrip('\n'), ctime(), remoteIP) 
-        if (data.strip() == 'respond'):
+        if (data.strip() == 'iss?'):
 		MESSAGE=ISS_PASS_GET()
                 UDPSock.sendto(MESSAGE, (remoteIP, remotePort))
+		print '  TX: %s' % (MESSAGE)
+
+	elif (data.strip() == 'dst?'):
+		MESSAGE='%d' % (localtime().tm_isdst)
+		UDPSock.sendto(MESSAGE, (remoteIP, remotePort))
 		print '  TX: %s' % (MESSAGE)
