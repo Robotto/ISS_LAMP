@@ -170,6 +170,7 @@ def ISS_PASS_GET():
   #currenttime =  1376339150
 
   print 'DEBUG: Current unix time: %s' % (currenttime)
+  DST = localtime().tm_isdst
 
 
   #set up som startup values for the pass starttimes:
@@ -213,11 +214,11 @@ def ISS_PASS_GET():
   #also: if no visible passes are in the data from HA. V_startUnix is set to curenttime, in order to end the while loop, this needs to be checked for:
   if (A_startUnix+600>V_startUnix & V_startUnix!=currenttime):
     print 'Visible pass no. %s, which is %s seconds in the future @ %s' % (Visible_rowCount, V_startUnix-currenttime, V_start.strftime('%d/%m %H:%M:%S'))
-    return 'V\0%s\0%s\0%s\0%s\0%s\0%s\0%s' % (V_mag, V_startUnix, V_loc1, V_maxUnix, V_loc2, V_endUnix, V_loc3)
+    return 'V\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s' % (DST, V_mag, V_startUnix, V_loc1, V_maxUnix, V_loc2, V_endUnix, V_loc3)
 #     return 'VISIBLE'
   else:
     print 'Regular pass no. %s, which is %s seconds in the future @ %s' % (All_rowCount, A_startUnix-currenttime, A_start.strftime('%d/%m %H:%M:%S'))
-    return 'R\0%s\0%s\0%s\0%s\0%s\0%s' % (A_startUnix, A_loc1, A_maxUnix, A_loc2, A_endUnix, A_loc3)
+    return 'R\0%s\0%s\0%s\0%s\0%s\0%s\0%s' % (DST, A_startUnix, A_loc1, A_maxUnix, A_loc2, A_endUnix, A_loc3)
 #     return 'REGULAR'
 
 
@@ -254,7 +255,8 @@ while True:
                 UDPSock.sendto(MESSAGE, (remoteIP, remotePort))
 		print '  TX: %s' % (MESSAGE)
 
-	elif (data.strip() == 'dst?'):
-		MESSAGE='%d' % (localtime().tm_isdst)
-		UDPSock.sendto(MESSAGE, (remoteIP, remotePort))
-		print '  TX: %s' % (MESSAGE)
+	#elif (data.strip() == 'dst?'):
+	#	#MESSAGE='%d' % (localtime().tm_isdst)
+	#	MESSAGE='1'
+	#	UDPSock.sendto(MESSAGE, (remoteIP, remotePort))
+	#	print '  TX: %s' % (MESSAGE)
