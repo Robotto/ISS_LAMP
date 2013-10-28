@@ -73,8 +73,8 @@ def ISS_PASS_GET():
   issVisibleURL = 'http://heavens-above.com/PassSummary.aspx?showAll=f&satid=25544&lat=%s&lng=%s&alt=%s&tz=CET' %(latitude, longtitude, elevation)
 
 #TEST PAGES:
-#  issAllURL = 'http://127.0.0.1/all_test_page.htm'
-#  issVisibleURL = 'http://127.0.0.1/visible_test_page.htm'
+  #issAllURL = 'http://127.0.0.1/all_test_page.htm'
+  #issVisibleURL = 'http://127.0.0.1/visible_test_page.htm'
 
   # Create virtual browser and get page.
   br = mechanize.Browser()
@@ -85,7 +85,21 @@ def ISS_PASS_GET():
   allHtml = br.open(issAllURL).read()
   print 'Retrieving list of visble passes specifically..'
   visibleHtml = br.open(issVisibleURL).read()
-
+  
+  #DEBUG:
+#  print
+#  print
+#  print
+#  print 'visibleHtml:'
+#  print visibleHtml
+#  print
+#  print
+#  print
+#  print 'allHtml:'
+#  print allHtml
+#  print
+#  print
+#  print
 
   print 'Parsing HTML into data rows...' 
 
@@ -167,11 +181,16 @@ def ISS_PASS_GET():
   currenttime = int(time())
 
   #DEBUG: mathced with test pages so that next pass is visible and occcurs in 19 seconds:
-  #currenttime =  1376339150
+#  currenttime =  1376260000
 
   print 'DEBUG: Current unix time: %s' % (currenttime)
   DST = localtime().tm_isdst
-
+  if DST: 
+	DSTstring = 'active'
+  else:
+	DSTstring = 'inactive'
+  
+  print 'Daylight savings is %s' % (DSTstring)
 
   #set up som startup values for the pass starttimes:
   A_startUnix=0  
@@ -182,24 +201,29 @@ def ISS_PASS_GET():
   #get data for the next future regular pass:
   All_rowCount=0
   while A_startUnix<currenttime: 
-    try: (A_start, A_max, A_end, A_loc1, A_loc2, A_loc3, A_startUnix, A_maxUnix, A_endUnix) = parseRow(allRows[All_rowCount], 0)
-    except: A_startUnix=currenttime 
+    try: 
+	(A_start, A_max, A_end, A_loc1, A_loc2, A_loc3, A_startUnix, A_maxUnix, A_endUnix) = parseRow(allRows[All_rowCount], 0)
+    except: 
+	A_startUnix=currenttime
+    	print 'Parsing of all-passes failed'
 
     All_rowCount+=1
 
     print 'Checked pass no. %s for past timecode: %s' % (All_rowCount, A_startUnix)
-  
-  
+    
+
   #get data for the next visible pass:
   Visible_rowCount=0
   while V_startUnix<currenttime:
-    try: (V_start, V_max, V_end, V_loc1, V_loc2, V_loc3, V_startUnix, V_maxUnix, V_endUnix, V_mag) = parseRow(visibleRows[Visible_rowCount], 1)
-    except: V_startUnix=currenttime #make sure next check doesn't fail 
+    try: 
+	(V_start, V_max, V_end, V_loc1, V_loc2, V_loc3, V_startUnix, V_maxUnix, V_endUnix, V_mag) = parseRow(visibleRows[Visible_rowCount], 1)
+    except: 
+	V_startUnix=currenttime #make sure next check doesn't fail 
+    	print 'Parsing of visible passes failed'
 
     Visible_rowCount+=1
 
     print 'Checked visible pass no. %s for past timecode: %s' % (Visible_rowCount, V_startUnix)
-  
 	
   print 'The next pass of the ISS above %s, %s is:' % (latitude, longtitude)
 
@@ -251,7 +275,10 @@ while True:
         print
 	print '  RX: "%s" @ %s from %s' % (data.rstrip('\n'), ctime(), remoteIP) 
         if (data.strip() == 'iss?'):
-		MESSAGE=ISS_PASS_GET()
+		try:
+			MESSAGE=ISS_PASS_GET()
+		except:
+			MESSAGE='fail at this end, sorry'			
                 UDPSock.sendto(MESSAGE, (remoteIP, remotePort))
 		print '  TX: %s' % (MESSAGE)
 
