@@ -98,8 +98,52 @@ def html_to_rows(html):
 	
 	return (Rows)
 
+def rowparser(row,isvisible):
 
-def check_data():
+	cols = row.findAll('td')
+	dStr = cols[0].a.string
+	if isvisible:
+		mag = float(cols[1].string)
+  
+	t1Str = ':'.join(cols[2].string.split(':'))
+	t2Str = ':'.join(cols[5].string.split(':'))
+	t3Str = ':'.join(cols[8].string.split(':'))
+	alt1 = cols[3].string.replace(u'\xB0', '')
+	az1 = cols[4].string
+	alt2 = cols[6].string.replace(u'\xB0', '')
+	az2 = cols[7].string
+	alt3 = cols[9].string.replace(u'\xB0', '')
+	az3 = cols[10].string
+	  
+	loc1 = '%s-%s' % (az1, alt1)
+	loc2 = '%s-%s' % (az2, alt2)
+	loc3 = '%s-%s' % (az3, alt3)
+
+	startStr = '%s %s %s' % (dStr, date.today().year, t1Str)
+	start = datetime(*strptime(startStr, '%d %b %Y %H:%M:%S')[0:7])
+	startUnix = int(mktime(strptime(startStr, '%d %b %Y %H:%M:%S')))
+
+	#print("Starttime unix string: %s") % (startUnix)
+
+	maxStr = '%s %s %s'  % (dStr, date.today().year, t2Str)
+	max = datetime(*strptime(maxStr, '%d %b %Y %H:%M:%S')[0:7])
+	maxUnix = int(mktime(strptime(maxStr, '%d %b %Y %H:%M:%S')))
+  
+	#print("Maxtime unix string: %s") % (maxUnix)
+
+	endStr = '%s %s %s' % (dStr, date.today().year, t3Str)
+	end = datetime(*strptime(endStr, '%d %b %Y %H:%M:%S')[0:7])
+	endUnix = int(mktime(strptime(endStr, '%d %b %Y %H:%M:%S')))
+  
+	#print("Endtime unix string: %s") % (endUnix)
+	
+	if isvisible:
+		return (start, max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, mag)
+	else:
+		return (start, max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix)
+
+
+def check_data(row):
 	#verifying current pass data 	
 
 
@@ -108,12 +152,6 @@ def check_data():
 	return(verification)
 
 
-
-
-# Report on all data packets received and
-# where they came from in each case (as this is
-# UDP, each may be from a different source and it's
-# up to the server to sort this out!)
 
 print 'Started @ %s' %(ctime())
 
@@ -125,6 +163,11 @@ allRows = html_to_rows(allhtml)
 
 
 while True:
+
+# Report on all data packets received and
+# where they came from in each case (as this is
+# UDP, each may be from a different source and it's
+# up to the server to sort this out!)
 	data,addr = UDPSock.recvfrom(1024)
     remoteIP=IP(addr[0]).strNormal() #convert address of packet origin to string
 	#print data.strip(),addr
