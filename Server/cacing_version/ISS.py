@@ -67,7 +67,7 @@ def parseRow(row, isvisible):
 
 #http://heavens-above.com/PassSummary.aspx?showAll=t&satid=25544&lat=56.156361&lng=10.188631&alt=40&tz=CET
 #http://heavens-above.com/PassSummary.aspx?showAll=f&satid=25544&lat=56.156361&lng=10.188631&alt=40&tz=CET
-def ISS_PASS_GET():
+def HTML_GET():
   # Heavens Above URLs and login information.
   issAllURL = 'http://heavens-above.com/PassSummary.aspx?showAll=t&satid=25544&lat=%s&lng=%s&alt=%s&tz=CET' %(latitude, longtitude, elevation)
   issVisibleURL = 'http://heavens-above.com/PassSummary.aspx?showAll=f&satid=25544&lat=%s&lng=%s&alt=%s&tz=CET' %(latitude, longtitude, elevation)
@@ -75,6 +75,9 @@ def ISS_PASS_GET():
 #TEST PAGES:
   #issAllURL = 'http://127.0.0.1/all_test_page.htm'
   #issVisibleURL = 'http://127.0.0.1/visible_test_page.htm'
+
+  #only get the html if the old list of passes is depleted. (if all passes are in the past)
+
 
   # Create virtual browser and get page.
   br = mechanize.Browser()
@@ -101,6 +104,10 @@ def ISS_PASS_GET():
 #  print
 #  print
 
+  return (allHtml, visibleHtml)
+
+def HTML_TO_ROWS(allHtml,visibleHtml)
+
   print 'Parsing HTML into data rows...' 
 
   # In the past, Beautiful Soup hasn't been able to parse the Heavens Above HTML.
@@ -108,11 +115,6 @@ def ISS_PASS_GET():
   # it in a well-formed HTML skeleton. If there is no table of ISS data, create
   # an empty table.
   try:
-
-      #allTable = allHtml.split(r'<tr class="clickableRow ', 1)[1] #split after first "clickable row" tag, return 2nd portion
-      #allTable = allTable.split(r'>', 1)[1] #split after first ">" return second portion
-      #allTable = allTable.split(r'</table>', 1)[0] #split after first "</table>" return first portion
-
       allTable = allHtml.split(r'<table class="standardTable"', 1)[1] #split after first "standard table" tag, return 2nd portion
       allTable = allTable.split(r'<tr class="tablehead">', 1)[1] #split after first "tablehead" tag return second portion
       allTable = allTable.split(r'<tr class="tablehead">', 1)[1] #split after first "tablehead" tag return second portion , again.
@@ -133,9 +135,6 @@ def ISS_PASS_GET():
   </html>''' % allTable
 
   try:
-      #visibleTable = visibleHtml.split(r'<tr class="clickableRow ', 1)[1]
-      #visibleTable = visibleTable.split(r'>', 1)[1]
-      #visibleTable = visibleTable.split(r'</table>', 1)[0]
       
       visibleTable = visibleHtml.split(r'<table class="standardTable"', 1)[1] #split after first "standard table" tag, return 2nd portion
       visibleTable = visibleTable.split(r'<tr class="tablehead">', 1)[1] #split after first "tablehead" tag return second portion
@@ -161,21 +160,21 @@ def ISS_PASS_GET():
   allSoup = BeautifulSoup(allHtml)
   visibleSoup = BeautifulSoup(visibleHtml)
 
-  # Collect only the data rows of the table.
-  #allRows = allSoup.findAll('table')[0].findAll('tr')[0:]
-  #visibleRows = visibleSoup.findAll('table')[0].findAll('tr')[0:]
-
+  #Collect only the data rows of the table.
+ 
   allRows = allSoup.findAll('table')[0].findAll('tr')[0:]
   visibleRows = visibleSoup.findAll('table')[0].findAll('tr')[0:]
 
-  #print
   #print 'all:'
   #print allRows
-  #print
+  #print ' '
   #print 'visible:'
   #print visibleRows
-  #print
-  #print
+
+  return (allRows,visibleRows)
+
+
+def GetNextPassFromRows(allRows,visibleRows)
 
   #Printing:
   currenttime = int(time())
