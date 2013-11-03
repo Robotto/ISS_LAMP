@@ -31,32 +31,30 @@ elevation = 40		#meters above sea level
 #latitude = 52.6925433
 #longtitude = 4.7553544
 
+def refresh_passes(isvisible):
+	html = get_html(isvisible)
+	rows = html_to_rows(html)
+	passes = rows_to_sets(rows)
+	return (passes)
 
-def get_visible_passes():
+
+def get_html(isvisible):
 	VisibleURL = 'http://heavens-above.com/PassSummary.aspx?showAll=f&satid=25544&lat=%s&lng=%s&alt=%s&tz=CET' %(latitude, longtitude, elevation)
-
-	br = mechanize.Browser()
-	br.set_handle_robots(False)
-	# Get the ISS PASSES pages:
-
-	print 'Retrieving list of visible passes'
-
-	visibleHtml = br.open(VisibleURL).read()
-
-	return(visibleHtml)
-
-def get_all_passes():
 	AllURL = 'http://heavens-above.com/PassSummary.aspx?showAll=t&satid=25544&lat=%s&lng=%s&alt=%s&tz=CET' %(latitude, longtitude, elevation)
 	
 	br = mechanize.Browser()
 	br.set_handle_robots(False)
 	# Get the ISS PASSES pages:
 
-	print 'Retrieving list of all passes'
+	print 'Retrieving list of passes'
 
-	visibleHtml = br.open(AllURL).read()
+	if isvisible:
+		Html = br.open(VisibleURL).read()
+	else:
+		Html = br.open(AllURL).read()
 
-	return(allHtml)
+	return(Html)
+
 
 def html_to_rows(html):
 
@@ -98,12 +96,31 @@ def html_to_rows(html):
 	
 	return (Rows)
 
-def rowparser(row,isvisible):
+def rows_to_sets(Rows):  #calls the rowparser for all the available rows, returns a set of passes.
+	index = 0
+	row in Rows:
+		(start, max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, mag) = rowparser(row)
+	    ##insert age check here?
+		passes[index]=[start,max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, mag]
+		index +=1
+	return (passes[:])
+
+def agechecker(passes): //checks the age of the passes
+	for isspass in passes:
+		if (isspass[0]<currenttime):
+			passes.remove(isspass)
+	return (passes[:])
+
+
+def rowparser(row):
 
 	cols = row.findAll('td')
 	dStr = cols[0].a.string
-	if isvisible:
+	
+	try:
 		mag = float(cols[1].string)
+	except:
+		mag = 0
   
 	t1Str = ':'.join(cols[2].string.split(':'))
 	t2Str = ':'.join(cols[5].string.split(':'))
@@ -137,30 +154,21 @@ def rowparser(row,isvisible):
   
 	#print("Endtime unix string: %s") % (endUnix)
 	
-	if isvisible:
-		return (start, max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, mag)
-	else:
-		return (start, max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix)
+	#if isvisible:
+	#	return (start, max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, mag)
+	#else:
+	#	return (start, max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, )
 
-
-def check_data(row):
-	#verifying current pass data 	
-
-
-	#if fail return -1
-
-	return(verification)
+	return (start, max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, mag)
 
 
 
 print 'Started @ %s' %(ctime())
 
-visiblehtml = get_visible_passes()
-visibleRows = html_to_rows(visiblehtml)
+currenttime = int(time())
 
-allhtml = get_all_passes()
-allRows = html_to_rows(allhtml)
-
+visiblepasses = agechecker(refresh_passes(True))
+regularpasses = agechecker(refresh_passes(False))
 
 while True:
 
@@ -178,7 +186,17 @@ while True:
 
 				currenttime = int(time())
 
-				#check age of data
+				visiblepasses = agechecker(visiblepasses)
+				regularpasses = agechecker(regularpasses)
+				
+#				if visiblepasses:
+
+#				else:
+					visiblepasses = agechecker(refresh_passes(True))
+
+#				if visiblepasses:
+					
+				
 
 				#brne -> get new data
 
