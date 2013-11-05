@@ -39,9 +39,13 @@ def refresh_passes(isvisible):
 
 
 def get_html(isvisible):
-  VisibleURL = 'http://heavens-above.com/PassSummary.aspx?showAll=f&satid=25544&lat=%s&lng=%s&alt=%s&tz=CET' %(latitude, longtitude, elevation)
-  AllURL = 'http://heavens-above.com/PassSummary.aspx?showAll=t&satid=25544&lat=%s&lng=%s&alt=%s&tz=CET' %(latitude, longtitude, elevation)
-  
+  #http://heavens-above.com/PassSummary.aspx?showAll=f&satid=25544&lat=56.156361&lng=10.188631&alt=40&tz=CET
+  #http://heavens-above.com/PassSummary.aspx?showAll=t&satid=25544&lat=56.156361&lng=10.188631&alt=40&tz=CET
+  #VisibleURL = 'http://heavens-above.com/PassSummary.aspx?showAll=f&satid=25544&lat=%s&lng=%s&alt=%s&tz=CET' %(latitude, longtitude, elevation)
+  #AllURL = 'http://heavens-above.com/PassSummary.aspx?showAll=t&satid=25544&lat=%s&lng=%s&alt=%s&tz=CET' %(latitude, longtitude, elevation)
+  VisibleURL = http://62.212.66.171/iss/visible.htm
+  AllURL = http://62.212.66.171/iss/regular.htm
+
   br = mechanize.Browser()
   br.set_handle_robots(False)
   # Get the ISS PASSES pages:
@@ -165,7 +169,9 @@ def rowparser(row):
 
 print 'Started @ %s' %(ctime())
 
-currenttime = int(time())
+#currenttime = int(time())
+#DEBUG MODE:
+currenttime = 1383691015
 
 visiblepasses = agechecker(refresh_passes(True))
 regularpasses = agechecker(refresh_passes(False))
