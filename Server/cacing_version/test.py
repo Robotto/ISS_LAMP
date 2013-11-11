@@ -14,8 +14,6 @@ from IPy import IP
 incomingPort = 1337
 remotePort = 1337
 
-#here's a test comment...
-
 # A UDP server listening for packets on port 1337:
 UDPSock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
 
