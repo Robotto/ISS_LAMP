@@ -1,2 +1,3 @@
 #!/bin/bash
-python ISS.py
+#launch the thing
+python test.py
