@@ -1,2 +1,2 @@
 #!/bin/bash
-python ISS_final.py
+python ISS.py
