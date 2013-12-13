@@ -22,7 +22,7 @@
 import mechanize
 from BeautifulSoup import BeautifulSoup
 from datetime import datetime, date, timedelta
-from time import strftime, strptime, mktime, struct_time, time, ctime, localtime
+from time import strftime, strptime, mktime, struct_time, time, ctime, localtime, sleep
 from getopt import getopt
 import os, sys
 #import envoy #calls bash commands as seperate threads.. unused.. for now..
@@ -44,8 +44,8 @@ UDPSock.bind(listen_addr)
 
 
 #Collections to store the passes:
-visiblepasses = collections.deque(maxlen=50)
-regularpasses = collections.deque(maxlen=50)
+#visiblepasses = collections.deque(maxlen=50)
+#regularpasses = collections.deque(maxlen=50)
 
 # Personalization.
 #Home:
@@ -57,6 +57,9 @@ elevation = 40		#meters above sea level
 #latitude = 52.6925433
 #longtitude = 4.7553544
 
+last_html_get_unix_time = 0
+html_cooldown_time = 86400 #24 hrs
+
 def refresh_passes(isvisible):
 	html = get_html(isvisible)
 	rows = html_to_rows(html)
@@ -67,20 +70,25 @@ def refresh_passes(isvisible):
 def get_html(isvisible):
 	#http://heavens-above.com/PassSummary.aspx?showAll=f&satid=25544&lat=56.156361&lng=10.188631&alt=40&tz=CET
 	#http://heavens-above.com/PassSummary.aspx?showAll=t&satid=25544&lat=56.156361&lng=10.188631&alt=40&tz=CET
+
 	#VisibleURL = 'http://heavens-above.com/PassSummary.aspx?showAll=f&satid=25544&lat=%s&lng=%s&alt=%s&tz=CET' %(latitude, longtitude, elevation)
 	#AllURL = 'http://heavens-above.com/PassSummary.aspx?showAll=t&satid=25544&lat=%s&lng=%s&alt=%s&tz=CET' %(latitude, longtitude, elevation)
-	VisibleURL = 'http://62.212.66.171/iss/visible.htm'
+
+	#VisibleURL = 'http://62.212.66.171/iss/visible.htm'
+	VisibleURL = 'http://62.212.66.171/iss/visible_but_no_passes.htm'
+
 	AllURL = 'http://62.212.66.171/iss/regular.htm'
+	#AllURL = 'http://62.212.66.171/iss/visible_but_no_passes.htm'
 
 	br = mechanize.Browser()
 	br.set_handle_robots(False)
 	# Get the ISS PASSES pages:
 
-	print 'Retrieving list of passes'
-
 	if isvisible:
+		print 'Retrieving list of visible passes'
 		Html = br.open(VisibleURL).read()
 	else:
+		print 'Retrieving list of regular passes'
 		Html = br.open(AllURL).read()
 
 	return(Html)
@@ -137,25 +145,6 @@ def rows_to_sets(Rows):	#calls the rowparser for all the available rows, returns
 
 	return (passes)
 
-def agechecker(passes): #checks the age of the passes
-	#for isspass in passes:
-	#	print "start: %s" % isspass[0]
-	#	print "max: %s" % isspass[1]
-	#	print "end: %s" % isspass[2]
-	#	print "start dir: %s" % isspass[3]
-	#	print "max dir: %s" % isspass[4]
-	#	print "end dir: %s" % isspass[5]
-	#	print "start unix: %s" % isspass[6]
-	#	print "max unix : %s" % isspass[7]
-	#	print "end unix: %s" % isspass[8]
-	#	print "mag?: %s" % isspass[9]
-
-
-	if (passes[-1][6]<currenttime):
-	#	passes.clear()
-		return(False)
-	else:
-		return(True)
 
 
 def rowparser(row):
@@ -166,7 +155,7 @@ def rowparser(row):
 	try:
 		mag = float(cols[1].string)
 	except:
-		mag = 0
+		mag = None
 
 	t1Str = ':'.join(cols[2].string.split(':'))
 	t2Str = ':'.join(cols[5].string.split(':'))
@@ -205,56 +194,143 @@ def rowparser(row):
 	#	return (start, max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, )
 
 	return (start, max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, mag)
+#			  0     1    2    3     4     5         6        7        8      9
+#													^-The magic happens here.
 
+def getnextpass(passes): #returns the next future pass
+	for isspass in passes:
+		if isspass[6]>currenttime:
+			return(isspass)
 
+def which_pass_is_next(visible,regular): #determines whether the next visible or regular pass is first
+	if visible is None:
+		return regular
+	elif regular[6]+600 > visible[6]: #do a ten minute check to see if the visible pass isn't a delayed subset of the regular passes
+		return visible
+	else:
+		return regular
+
+def passes_too_old(passes): #checks the age of the passes returns false if we're still good.
+	#for isspass in passes:
+	#	print "start: %s" % isspass[0]
+	#	print "max: %s" % isspass[1]
+	#	print "end: %s" % isspass[2]
+	#	print "start dir: %s" % isspass[3]
+	#	print "max dir: %s" % isspass[4]
+	#	print "end dir: %s" % isspass[5]
+	#	print "start unix: %s" % isspass[6]
+	#	print "max unix : %s" % isspass[7]
+	#	print "end unix: %s" % isspass[8]
+	#	print "mag?: %s" % isspass[9]
+
+	if (passes[-1][6]<currenttime): #is the last entry in the deque in the past?
+	#	passes.clear()
+		return(True)
+	else:
+		return(False)
 
 print 'Started @ %s' %(ctime())
+
+DST = localtime().tm_isdst
+if DST:
+	DSTstring = 'active'
+else:
+	DSTstring = 'inactive'
+print 'Daylight savings is %s' % (DSTstring)
 
 #currenttime = int(time())
 #DEBUG MODE:
 currenttime = 1383691015
 
-visiblepasses = agechecker(refresh_passes(True))
-regularpasses = agechecker(refresh_passes(False))
+visiblepasses = refresh_passes(True)
+regularpasses = refresh_passes(False)
 
+last_visible_html_get_unix_time = last_regular_html_get_unix_time = currenttime  #YOU CAN DO THAT?!
+
+
+
+
+#print "next visible pass: %s" %next_visible_pass
+#print
+#print "next regular pass: %s" %next_regular_pass
+#print
+#print "next pass: %s" %next_pass
 while True:
 
-# Report on all data packets received and
-# where they came from in each case (as this is
-# UDP, each may be from a different source and it's
-# up to the server to sort this out!)
+	#update time:
+	sleep(0.5) #delay for half a second
+	#currenttime = int(time()) #<--------------------------------------------------------------- UNCOMMENT ON RELEASE!
+
+
+
+	#check the age of the passes, refresh them if neccesary, but only if quarantine isn't set:
+	if currenttime>last_html_get_unix_time+html_cooldown_time: quarantine=False
+	else: quarantine=True
+
+
+	if (quarantine is False):
+
+		if passes_too_old(visiblepasses):
+			print "Visible pass list outdated, refreshing..."
+			visiblepasses.clear()
+			visiblepasses=refresh_passes(True)
+			last_html_get_unix_time=currenttime
+
+		if passes_too_old(regularpasses):
+			print "Regular pass list outdated, refreshing..."
+			regularpasses.clear()
+			regularpasses=refresh_passes(False)
+			last_html_get_unix_time=currenttime
+
+	else:
+		if passes_too_old(visiblepasses): visiblepasses.clear()
+		if passes_too_old(regularpasses): regularpasses.clear()
+		#this means that there will be no data in the deque, and that the bad data string will be sent if asked.
+
+	# Report on all data packets received and
+	# where they came from in each case (as this is
+	# UDP, each may be from a different source and it's
+	# up to the server to sort this out!)
 	data,addr = UDPSock.recvfrom(1024)
 	remoteIP=IP(addr[0]).strNormal() #convert address of packet origin to string
 	#print data.strip(),addr
 
 	print '	RX: "%s" @ %s from %s' % (data.rstrip('\n'), ctime(), remoteIP)
+
+
+
 	if (data.strip() == 'iss?'):
 		try:
+			print "Checking for passes."
 
-			currenttime = int(time())
+			next_visible_pass = getnextpass(visiblepasses)
+			next_regular_pass = getnextpass(regularpasses)
+			next_pass = which_pass_is_next(next_visible_pass,next_regular_pass)
 
-			visiblepasses = agechecker(visiblepasses)
-			regularpasses = agechecker(regularpasses)
+			print 'The next pass of the ISS above %s, %s is:' % (latitude, longtitude)
 
-#			if visiblepasses:
+				# which is %s seconds in the future @ %s' % (All_rowCount, A_startUnix-currenttime, A_start.strftime('%d/%m %H:%M:%S'))
 
-#			else:
-			visiblepasses = agechecker(refresh_passes(True))
-#				 if visiblepasses:
-
+			if next_pass[9] is None:
+				print "  Not visible, and will start in %s seconds @ %s" %(next_pass[6]-currenttime, next_pass[0].strftime('%d/%m %H:%M:%S'))
+				MESSAGE='R\0%s\0%s\0%s\0%s\0%s\0%s\0%s' % (DST, next_pass[6],next_pass[3],next_pass[7],next_pass[4],next_pass[8],next_pass[5])
 
 
-				#brne -> get new data
+			else:
+				print "  VISIBLE! It will start in %s seconds @ %s" %(next_pass[6]-currenttime, next_pass[0].strftime('%d/%m %H:%M:%S'))
+				MESSAGE='V\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s' % (DST, next_pass[9], next_pass[6],next_pass[3],next_pass[7],next_pass[4],next_pass[8],next_pass[5])
+				#	return (start, max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, mag)
+				#			  0     1    2     3     4     5        6        7        8      9
+				#	(DST, V_mag, V_startUnix, V_loc1, V_maxUnix, V_loc2, V_endUnix, V_loc3)
 
-				#parse data
+			print "TX: %s"%MESSAGE
 
-			MESSAGE=GetNextPassFromRows(allRows,visibleRows)
 
 		except:
 			MESSAGE='fail at this end, sorry'
 
-		UDPSock.sendto(MESSAGE, (remoteIP, remotePort))
-		print '	TX: %s' % (MESSAGE)
+		#UDPSock.sendto(MESSAGE, (remoteIP, remotePort))
+		#print '	TX: %s' % (MESSAGE)
 
 
 
