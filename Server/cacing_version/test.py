@@ -57,8 +57,23 @@ elevation = 40		#meters above sea level
 #latitude = 52.6925433
 #longtitude = 4.7553544
 
+#HTML GET STUFF:
+
+#http://heavens-above.com/PassSummary.aspx?showAll=f&satid=25544&lat=56.156361&lng=10.188631&alt=40&tz=CET
+#http://heavens-above.com/PassSummary.aspx?showAll=t&satid=25544&lat=56.156361&lng=10.188631&alt=40&tz=CET
+
+VisibleURL = 'http://heavens-above.com/PassSummary.aspx?showAll=f&satid=25544&lat=%s&lng=%s&alt=%s&tz=CET' %(latitude, longtitude, elevation)
+AllURL = 'http://heavens-above.com/PassSummary.aspx?showAll=t&satid=25544&lat=%s&lng=%s&alt=%s&tz=CET' %(latitude, longtitude, elevation)
+
+#VisibleURL = 'http://62.212.66.171/iss/visible.htm'
+#VisibleURL = 'http://62.212.66.171/iss/visible_but_no_passes.htm'
+
+#AllURL = 'http://62.212.66.171/iss/regular.htm'
+#AllURL = 'http://62.212.66.171/iss/visible_but_no_passes.htm'
+
 last_html_get_unix_time = 0
 html_cooldown_time = 86400 #24 hrs
+
 
 def refresh_passes(isvisible):
 	html = get_html(isvisible)
@@ -68,17 +83,6 @@ def refresh_passes(isvisible):
 
 
 def get_html(isvisible):
-	#http://heavens-above.com/PassSummary.aspx?showAll=f&satid=25544&lat=56.156361&lng=10.188631&alt=40&tz=CET
-	#http://heavens-above.com/PassSummary.aspx?showAll=t&satid=25544&lat=56.156361&lng=10.188631&alt=40&tz=CET
-
-	#VisibleURL = 'http://heavens-above.com/PassSummary.aspx?showAll=f&satid=25544&lat=%s&lng=%s&alt=%s&tz=CET' %(latitude, longtitude, elevation)
-	#AllURL = 'http://heavens-above.com/PassSummary.aspx?showAll=t&satid=25544&lat=%s&lng=%s&alt=%s&tz=CET' %(latitude, longtitude, elevation)
-
-	#VisibleURL = 'http://62.212.66.171/iss/visible.htm'
-	VisibleURL = 'http://62.212.66.171/iss/visible_but_no_passes.htm'
-
-	AllURL = 'http://62.212.66.171/iss/regular.htm'
-	#AllURL = 'http://62.212.66.171/iss/visible_but_no_passes.htm'
 
 	br = mechanize.Browser()
 	br.set_handle_robots(False)
@@ -223,9 +227,11 @@ def passes_too_old(passes): #checks the age of the passes returns false if we're
 	#	print "end unix: %s" % isspass[8]
 	#	print "mag?: %s" % isspass[9]
 
-	if (passes[-1][6]<currenttime): #is the last entry in the deque in the past?
-	#	passes.clear()
-		return(True)
+	try:
+		if (passes[-1][6]<currenttime): #is the last entry in the deque in the past?
+			return(True)
+	except IndexError:  #No data exists.. that's kind of too old... right?
+			return(True)
 	else:
 		return(False)
 
@@ -238,14 +244,14 @@ else:
 	DSTstring = 'inactive'
 print 'Daylight savings is %s' % (DSTstring)
 
-#currenttime = int(time())
+currenttime = int(time())
 #DEBUG MODE:
-currenttime = 1383691015
+#currenttime = 1383691015
 
 visiblepasses = refresh_passes(True)
 regularpasses = refresh_passes(False)
 
-last_visible_html_get_unix_time = last_regular_html_get_unix_time = currenttime  #YOU CAN DO THAT?!
+last_html_get_unix_time = currenttime #last time was NOW!
 
 
 
@@ -259,13 +265,22 @@ while True:
 
 	#update time:
 	sleep(0.5) #delay for half a second
-	#currenttime = int(time()) #<--------------------------------------------------------------- UNCOMMENT ON RELEASE!
+	currenttime = int(time()) #<--------------------------------------------------------------- UNCOMMENT ON RELEASE!
 
 
 
 	#check the age of the passes, refresh them if neccesary, but only if quarantine isn't set:
-	if currenttime>last_html_get_unix_time+html_cooldown_time: quarantine=False
-	else: quarantine=True
+	if currenttime>last_html_get_unix_time+html_cooldown_time:
+		quarantine=False
+		print "Quarantine inactive. Everything is normal...  EVERYTHING!"
+	else:
+		quarantine=True
+		seconds_to_lift=html_cooldown_time-(currenttime-last_html_get_unix_time)
+		unixtime_at_lift=localtime(currenttime+seconds_to_lift)
+		#print "unixtime_at_lift: %s"%unixtime_at_lift
+		print "Quarantine ACTIVE, here be dragons. normal operations will resume in %s seconds @ %s"%(seconds_to_lift, strftime('%d/%m %H:%M:%S',unixtime_at_lift))
+
+			#unixtime_at_lift.fromtimestamp('%d/%m %H:%M:%S'))
 
 
 	if (quarantine is False):
@@ -283,8 +298,12 @@ while True:
 			last_html_get_unix_time=currenttime
 
 	else:
-		if passes_too_old(visiblepasses): visiblepasses.clear()
-		if passes_too_old(regularpasses): regularpasses.clear()
+		if passes_too_old(visiblepasses):
+			print "Visible pass data outdated (or empty). But not enough time has passed since last get from %s"%VisibleURL
+			visiblepasses.clear()
+		if passes_too_old(regularpasses):
+			print "Regular pass data outdated (or empty). But not enough time has passed since last get from %s"%AllURL
+			regularpasses.clear()
 		#this means that there will be no data in the deque, and that the bad data string will be sent if asked.
 
 	# Report on all data packets received and
@@ -309,7 +328,7 @@ while True:
 
 			print 'The next pass of the ISS above %s, %s is:' % (latitude, longtitude)
 
-				# which is %s seconds in the future @ %s' % (All_rowCount, A_startUnix-currenttime, A_start.strftime('%d/%m %H:%M:%S'))
+			#next_pass[9] is magnitude, which is 'None' if it's not a visible pass...
 
 			if next_pass[9] is None:
 				print "  Not visible, and will start in %s seconds @ %s" %(next_pass[6]-currenttime, next_pass[0].strftime('%d/%m %H:%M:%S'))
@@ -323,14 +342,14 @@ while True:
 				#			  0     1    2     3     4     5        6        7        8      9
 				#	(DST, V_mag, V_startUnix, V_loc1, V_maxUnix, V_loc2, V_endUnix, V_loc3)
 
-			print "TX: %s"%MESSAGE
+
 
 
 		except:
 			MESSAGE='fail at this end, sorry'
 
-		#UDPSock.sendto(MESSAGE, (remoteIP, remotePort))
-		#print '	TX: %s' % (MESSAGE)
+		UDPSock.sendto(MESSAGE, (remoteIP, remotePort))
+		print '	TX: %s' % (MESSAGE)
 
 
 

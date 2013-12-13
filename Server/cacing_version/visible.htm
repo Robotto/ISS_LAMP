@@ -1,0 +1,236 @@
+
+
+<!DOCTYPE html>
+<html>
+<head><title>
+	ISS - Visible Passes
+</title><meta name="description" content="Satellite predictions and other astronomical data customised for your location." /><link href="css/ha.css" rel="stylesheet" type="text/css" /><link rel="shortcut icon" href="/favicon.ico" type="image/vnd.microsoft.icon" /><link rel="icon" href="/favicon.ico" type="image/vnd.microsoft.icon" />
+    <script type="text/javascript" src="scripts/jquery-1.10.2.js"></script>
+    <script type="text/javascript" src="scripts/standard.js"></script>
+    <script type="text/javascript">
+        function updateLocalTime(utc) {
+            var localdiff = parseInt(document.getElementById('utcOffset').value);
+            var local_now = new Date(utc.getTime() + localdiff);
+            $('#spanTime').text(formatTime(local_now));
+        }
+
+        jQuery(function () {
+            onClockTick = updateLocalTime;
+            startClock();
+        });
+    </script>
+    
+    </head>
+<body>
+    <form method="post" action="/PassSummary.aspx?showAll=f" id="aspnetForm">
+<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="/wEPDwUKMTQxMzM5MzEzOQ9kFgJmD2QWAgIDDxYCHgZhY3Rpb24FGy9QYXNzU3VtbWFyeS5hc3B4P3Nob3dBbGw9ZhYYAgEPFgIeBFRleHQFQTxpbnB1dCB0eXBlPSJoaWRkZW4iIG5hbWU9InV0Y09mZnNldCIgaWQ9InV0Y09mZnNldCIgdmFsdWU9IjAiIC8+ZAIDDw8WAh4LTmF2aWdhdGVVcmwFK34vP2xhdD0wJmxuZz0wJmxvYz1VbnNwZWNpZmllZCZhbHQ9MCZ0ej1VQ1RkZAIHDxYCHwEFCWFub255bW91c2QCCQ8PFgIfAQULVW5zcGVjaWZpZWRkZAILDw8WAh8BBRQwLjAwMDDCsE4sIDAuMDAwMMKwRWRkAg0PFgIfAQUIMjI6Mjg6MDVkAg8PDxYCHwEFBiswMDowMGRkAhEPDxYCHwEFFElTUyAtIFZpc2libGUgUGFzc2VzZGQCFQ8PFgIfAQXJAzxhIGhyZWY9Ii8/bGF0PTAmbG5nPTAmbG9jPVVuc3BlY2lmaWVkJmFsdD0wJnR6PVVDVCIgdGl0bGU9IkdvIHRvIGhvbWUgcGFnZSI+SG9tZTwvYT4gfCA8YSBocmVmPSIvc2F0aW5mby5hc3B4P3NhdGlkPTI1NTQ0JmxhdD0wJmxuZz0wJmxvYz1VbnNwZWNpZmllZCZhbHQ9MCZ0ej1VQ1QiIHRpdGxlPSJTaG93IGluZm9ybWF0aW9uIGFib3V0IHRoaXMgc2F0ZWxsaXRlIj5JbmZvLjwvYT4gfCA8YSBocmVmPSIvb3JiaXQuYXNweD9zYXRpZD0yNTU0NCZsYXQ9MCZsbmc9MCZsb2M9VW5zcGVjaWZpZWQmYWx0PTAmdHo9VUNUIiB0aXRsZT0iU2hvdyBvcmJpdCBvZiB0aGlzIHNhdGVsbGl0ZSI+T3JiaXQ8L2E+IHwgPGEgaHJlZj0iL1Bhc3Nlc0hlbHAuYXNweD9sYXQ9MCZsbmc9MCZsb2M9VW5zcGVjaWZpZWQmYWx0PTAmdHo9VUNUIiB0aXRsZT0iR2V0IGhlbHAgb24gaG93IHRoaXMgcGFnZSI+SGVscDwvYT5kZAIXD2QWEgIBDw8WAh8BBRYwNSBOb3ZlbWJlciAyMDEzIDAwOjAwZGQCAg8PFgIeB1Rvb2xUaXAFG3Nob3cgcHJldmlvdXMgc2VhcmNoIHBlcmlvZGRkAgMPDxYCHwMFF3Nob3cgbmV4dCBzZWFyY2ggcGVyaW9kZGQCBA8PFgIfAQUWMTUgTm92ZW1iZXIgMjAxMyAwMDowMGRkAgUPDxYEHwIFP29yYml0LmFzcHg/c2F0aWQ9MjU1NDQmbGF0PTAmbG5nPTAmbG9jPVVuc3BlY2lmaWVkJmFsdD0wJnR6PVVDVB8DBRxTaG93IG9yYml0IG9mIHRoaXMgc2F0ZWxsaXRlZGQCBg8PFgIfAQUpNDE2IHggNDE4IGttLCA1MS42wrAgKEVwb2NoOiAwNSBOb3ZlbWJlcilkZAIHDxAPFgIfAQUMdmlzaWJsZSBvbmx5ZGRkZAIIDxAPFgIfAQUDYWxsZGRkZAIJDw8WAh8BBT1DbGljayBvbiB0aGUgZGF0ZSB0byBnZXQgYSBzdGFyIGNoYXJ0IGFuZCBvdGhlciBwYXNzIGRldGFpbHMuZGQCGQ8PFgIfAgULRG9uYXRlLmFzcHhkZAIbDxYCHwEFpQJEZXZlbG9wZWQgYW5kIG1haW50YWluZWQgYnkgPGEgaHJlZj0ibWFpbHRvOkNocmlzLlBlYXRAaGVhdmVucy1hYm92ZS5jb20iPkNocmlzIFBlYXQ8L2E+LCBIZWF2ZW5zLUFib3ZlIEdtYkguIFBsZWFzZSByZWFkIHRoZSA8YSBocmVmPSJmYXEuYXNweD9sYXQ9MCZsbmc9MCZsb2M9VW5zcGVjaWZpZWQmYWx0PTAmdHo9VUNUIj5GQVE8L2E+IGJlZm9yZSBzZW5kaW5nIGUtbWFpbC4gPGEgaHJlZj0iSW1wcmludC5hc3B4P2xhdD0wJmxuZz0wJmxvYz1VbnNwZWNpZmllZCZhbHQ9MCZ0ej1VQ1QiPkltcHJpbnQ8L2E+LmQYAQUeX19Db250cm9sc1JlcXVpcmVQb3N0QmFja0tleV9fFgMFJmN0bDAwJENvbnRlbnRQbGFjZUhvbGRlcjEkcmFkaW9WaXNpYmxlBSJjdGwwMCRDb250ZW50UGxhY2VIb2xkZXIxJHJhZGlvQWxsBSJjdGwwMCRDb250ZW50UGxhY2VIb2xkZXIxJHJhZGlvQWxsn78w5MWG273Bx5Syd3xbh/nU8Z05Zr4A0N62m9xUcfI=" />
+
+<input type="hidden" name="__EVENTVALIDATION" id="__EVENTVALIDATION" value="/wEWBgLJwqjXCgL9hJP6CwKC56rGDwKt7K6OCwKrlO6rCAKrv8GPDA6fjI7kG9OB/b7W4ovAlEBIF4ThD8afoqPfxt57hz3H" />
+    <input type="hidden" name="utcOffset" id="utcOffset" value="0" />
+    <table border="0" style="margin-left: auto; margin-right: auto; border-style: none">
+        <tr>
+            <td>
+                <a id="ctl00_hyperlinkLogo" href="./?lat=0&amp;lng=0&amp;loc=Unspecified&amp;alt=0&amp;tz=UCT" style="display:inline-block;"><img src="images/tinylogo.jpg" alt="" /></a>
+            </td>
+            <td>
+                
+                    <script type="text/javascript"><!--
+                        google_ad_client = "ca-pub-5668297076217155";
+                        google_ad_slot = "5479771053";
+                        google_ad_width = 728;
+                        google_ad_height = 90;
+//-->
+                    </script>
+                    <script type="text/javascript" src="http://pagead2.googlesyndication.com/pagead/show_ads.js"></script>
+                
+            </td>
+            <td>
+                <table class="userTable">
+                    <tr>
+                        <td>
+                            User:
+                        </td>
+                        <td>
+                            anonymous
+                        </td>
+                    </tr>
+                    <tr class="lightrow">
+                        <td>
+                            Location:
+                        </td>
+                        <td>
+                            <span id="ctl00_lblObservationSite">Unspecified</span>
+                        </td>
+                    </tr>
+                    <tr class="lightrow">
+                        <td colspan="2" align="center">
+                            (<span id="ctl00_lblLatLong">0.0000°N, 0.0000°E</span>)
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            Time:
+                        </td>
+                        <td>
+                            <span id="spanTime">
+                                22:28:05</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" align="center">
+                            (UTC<span id="ctl00_lblTZ">+00:00</span>)
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="3">
+                <hr />
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2" valign="top">
+                <table width="100%">
+                    <tr>
+                        <td align="left">
+                            <span id="ctl00_lblTitle" class="pagehead">ISS - Visible Passes</span>
+                        </td>
+                        <td align="right" class="navbar">
+                            
+                            <span id="ctl00_lblNavBar"><a href="/?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT" title="Go to home page">Home</a> | <a href="/satinfo.aspx?satid=25544&lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT" title="Show information about this satellite">Info.</a> | <a href="/orbit.aspx?satid=25544&lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT" title="Show orbit of this satellite">Orbit</a> | <a href="/PassesHelp.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT" title="Get help on how this page">Help</a></span>
+                        </td>
+                    </tr>
+                </table>
+                <p />
+                
+    <input type="hidden" name="ctl00$ContentPlaceHolder1$hidStartUtc" id="ctl00_ContentPlaceHolder1_hidStartUtc" value="635192872854483043" />
+    <table>
+        <tr>
+            <td class="userinfo">
+                Search period start:
+            </td>
+            <td class="userinfo">
+                <span id="ctl00_ContentPlaceHolder1_lblSearchStart">05 November 2013 00:00</span>
+            </td>
+            <td class="userinfo" rowspan="2">
+                <input type="submit" name="ctl00$ContentPlaceHolder1$btnPrev" value="&lt;" id="ctl00_ContentPlaceHolder1_btnPrev" title="show previous search period" />
+                <input type="submit" name="ctl00$ContentPlaceHolder1$btnNext" value=">" id="ctl00_ContentPlaceHolder1_btnNext" title="show next search period" />
+            </td>
+        </tr>
+        <tr>
+            <td class="userinfo">
+                Search period end:
+            </td>
+            <td class="userinfo">
+                <span id="ctl00_ContentPlaceHolder1_lblSearchEnd">15 November 2013 00:00</span>
+            </td>
+        </tr>
+        <tr>
+            <td class="userinfo">
+                <a id="ctl00_ContentPlaceHolder1_hlOrbit" title="Show orbit of this satellite" href="orbit.aspx?satid=25544&amp;lat=0&amp;lng=0&amp;loc=Unspecified&amp;alt=0&amp;tz=UCT">Orbit:</a>
+            </td>
+            <td class="userinfo" colspan="2">
+                <span id="ctl00_ContentPlaceHolder1_lblOrbit">416 x 418 km, 51.6° (Epoch: 05 November)</span>
+            </td>
+        </tr>
+    </table>
+    <p>
+        Passes to include:
+        <input id="ctl00_ContentPlaceHolder1_radioVisible" type="radio" name="ctl00$ContentPlaceHolder1$visible" value="radioVisible" checked="checked" /><label for="ctl00_ContentPlaceHolder1_radioVisible">visible only</label>
+        <input id="ctl00_ContentPlaceHolder1_radioAll" type="radio" name="ctl00$ContentPlaceHolder1$visible" value="radioAll" onclick="javascript:setTimeout(&#39;__doPostBack(\&#39;ctl00$ContentPlaceHolder1$radioAll\&#39;,\&#39;\&#39;)&#39;, 0)" /><label for="ctl00_ContentPlaceHolder1_radioAll">all</label>
+    </p>
+    <p>
+        <img src="images/updated.gif" alt="updated" width="60" height="12" /><span id="ctl00_ContentPlaceHolder1_lblMessage" class="userinfo">Click on the date to get a star chart and other pass details.</span></p>
+    <p />
+    <table class="standardTable" cellspacing="0" cellpadding="4" rules="cols">
+        <tr class="tablehead">
+            <td align="center" rowspan="2" valign="middle">
+                Date
+            </td>
+            <td align="center">
+                Brightness
+            </td>
+            <td align="center" colspan="3">
+                Start
+            </td>
+            <td align="center" colspan="3">
+                Highest point
+            </td>
+            <td align="center" colspan="3">
+                End
+            </td>
+            <td align="center" rowspan="2" valign="middle">
+                Pass type
+            </td>
+        </tr>
+        <tr class="tablehead">
+            <td align="center">
+                [Mag]
+            </td>
+            <td align="center">
+                Time
+            </td>
+            <td>
+                Alt.
+            </td>
+            <td>
+                Az.
+            </td>
+            <td align="center">
+                Time
+            </td>
+            <td>
+                Alt.
+            </td>
+            <td>
+                Az.
+            </td>
+            <td align="center">
+                Time
+            </td>
+            <td>
+                Alt.
+            </td>
+            <td>
+                Az.
+            </td>
+        </tr>
+        <tr class="clickableRow lightrow" onclick="window.location='passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56602.1928680787&type=V'"><td><a href="passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56602.1928680787&type=V" title="show pass details">06 Nov</a></td><td align="center">-0.5</td><td>04:35:05</td><td align="center">10°</td><td>S</td><td>04:37:43</td><td align="center">22°</td><td>SE</td><td>04:40:21</td><td align="center">10°</td><td>ENE</td><td>visible</td></tr><tr class="clickableRow darkrow" onclick="window.location='passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56604.1929310764&type=V'"><td><a href="passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56604.1929310764&type=V" title="show pass details">08 Nov</a></td><td align="center">-3.4</td><td>04:35:39</td><td align="center">20°</td><td>SW</td><td>04:37:49</td><td align="center">65°</td><td>NW</td><td>04:41:06</td><td align="center">10°</td><td>NNE</td><td>visible</td></tr><tr class="clickableRow lightrow" onclick="window.location='passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56605.1613614005&type=V'"><td><a href="passdetails.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT&satid=25544&mjd=56605.1613614005&type=V" title="show pass details">09 Nov</a></td><td align="center">-0.4</td><td>03:52:21</td><td align="center">13°</td><td>NE</td><td>03:52:21</td><td align="center">13°</td><td>NE</td><td>03:52:46</td><td align="center">10°</td><td>NE</td><td>visible</td></tr>
+    </table>
+
+                &nbsp;
+                <p />
+                <table style="border-top: 1px solid black;">
+                    <tr>
+                    <td valign="top" style="width:100px"><a id="ctl00_linkDonate" title="Make a donation to help with the running costs of Heavens-Above" href="Donate.aspx"><img title="Make a donation to help with the running costs of Heavens-Above" src="images/btn_donate_SM.gif" alt="" /></a></td>
+                        <td valign="top">
+                            <div class="footer">
+                                Developed and maintained by <a href="mailto:Chris.Peat@heavens-above.com">Chris Peat</a>, Heavens-Above GmbH. Please read the <a href="faq.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT">FAQ</a> before sending e-mail. <a href="Imprint.aspx?lat=0&lng=0&loc=Unspecified&alt=0&tz=UCT">Imprint</a>.</div>
+                        </td>
+                        <td>
+                            <a href="http://www.dlr.de/rb/en/" target="_blank">
+                                <img src="images/dlrhost.gif" align="left" border="0" alt="DLR" /></a>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+            <td rowspan="1" valign="top">
+                <p />
+              <script type="text/javascript"><!--
+                  google_ad_client = "ca-pub-5668297076217155";
+                  /* Skyscraper */
+                  google_ad_slot = "5747477215";
+                  google_ad_width = 160;
+                  google_ad_height = 600;
+//-->
+</script>
+<script type="text/javascript"
+src="//pagead2.googlesyndication.com/pagead/show_ads.js">
+</script>
+            </td>
+        </tr>
+    </table>
+    </form>
+</body>
+</html>
