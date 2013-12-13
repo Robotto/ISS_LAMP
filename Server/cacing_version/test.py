@@ -4,7 +4,7 @@
                                                                                    |                              |
           Get page -> pull data -> check validity -- valid: -> save it -> WAIT FOR REQUEST-> respond to request ->/
 (check for quarantine)                  |                                        |
-                                        |                                        |  
+                                        |                                        |
                                         bad:                                     while <-------------------------<^<-----------\
                                         |                                        |                                ^             |
                                         quarantine for 24 hrs                    check timestamp of next pass --> in_future     |
@@ -80,7 +80,7 @@ def get_html(isvisible):
 
 def html_to_rows(html):
 
-  print 'Parsing HTML into data rows...' 
+  print 'Parsing HTML into data rows...'
 
     # In the past, Beautiful Soup hasn't been able to parse the Heavens Above HTML.
     # To get around this problem, we extract just the table of ISS data and set
@@ -105,17 +105,17 @@ def html_to_rows(html):
   </table>
   </body>
   </html>''' % Table
-  
+
   # Parse the newly created HTML.
   Soup = BeautifulSoup(newHtml)
-    
+
   #Collect only the data rows of the table.
-  
+
   Rows = Soup.findAll('table')[0].findAll('tr')[0:]
   #print 'The parsed rows:'
   #print Rows
-  #print 
-  
+  #print
+
   return (Rows)
 
 def rows_to_sets(Rows):  #calls the rowparser for all the available rows, returns a set of passes.
@@ -125,25 +125,25 @@ def rows_to_sets(Rows):  #calls the rowparser for all the available rows, return
       ##insert age check here?
     passes[index]=[start,max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, mag]
     index +=1
-  return (passes[:])
+  return (passes)
 
 def agechecker(passes): //checks the age of the passes
   for isspass in passes:
     if (isspass[0]<currenttime):
       passes.remove(isspass)
-  return (passes[:])
+  return (passes)
 
 
 def rowparser(row):
 
   cols = row.findAll('td')
   dStr = cols[0].a.string
-  
+
   try:
     mag = float(cols[1].string)
   except:
     mag = 0
-  
+
   t1Str = ':'.join(cols[2].string.split(':'))
   t2Str = ':'.join(cols[5].string.split(':'))
   t3Str = ':'.join(cols[8].string.split(':'))
@@ -153,7 +153,7 @@ def rowparser(row):
   az2 = cols[7].string
   alt3 = cols[9].string.replace(u'\xB0', '')
   az3 = cols[10].string
-    
+
   loc1 = '%s-%s' % (az1, alt1)
   loc2 = '%s-%s' % (az2, alt2)
   loc3 = '%s-%s' % (az3, alt3)
@@ -167,15 +167,15 @@ def rowparser(row):
   maxStr = '%s %s %s'  % (dStr, date.today().year, t2Str)
   max = datetime(*strptime(maxStr, '%d %b %Y %H:%M:%S')[0:7])
   maxUnix = int(mktime(strptime(maxStr, '%d %b %Y %H:%M:%S')))
-  
+
   #print("Maxtime unix string: %s") % (maxUnix)
 
   endStr = '%s %s %s' % (dStr, date.today().year, t3Str)
   end = datetime(*strptime(endStr, '%d %b %Y %H:%M:%S')[0:7])
   endUnix = int(mktime(strptime(endStr, '%d %b %Y %H:%M:%S')))
-  
+
   #print("Endtime unix string: %s") % (endUnix)
-  
+
   #if isvisible:
   #  return (start, max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, mag)
   #else:
@@ -204,7 +204,7 @@ while True:
     remoteIP=IP(addr[0]).strNormal() #convert address of packet origin to string
   #print data.strip(),addr
 
-  print '  RX: "%s" @ %s from %s' % (data.rstrip('\n'), ctime(), remoteIP) 
+  print '  RX: "%s" @ %s from %s' % (data.rstrip('\n'), ctime(), remoteIP)
       if (data.strip() == 'iss?'):
         try:
 
@@ -212,25 +212,25 @@ while True:
 
           visiblepasses = agechecker(visiblepasses)
           regularpasses = agechecker(regularpasses)
-        
+
 #         if visiblepasses:
 
 #         else:
           visiblepasses = agechecker(refresh_passes(True))
 
 #         if visiblepasses:
-          
-        
+
+
 
         #brne -> get new data
 
         #parse data
 
           MESSAGE=GetNextPassFromRows(allRows,visibleRows)
-  
+
         except:
-          MESSAGE='fail at this end, sorry'      
-    
+          MESSAGE='fail at this end, sorry'
+
         UDPSock.sendto(MESSAGE, (remoteIP, remotePort))
         print '  TX: %s' % (MESSAGE)
 
