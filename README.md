@@ -11,6 +11,8 @@ which is parsed (upon request) from heavens-above.com by the 'Server' side pytho
 Both visible and invisible passes are parsed, visible passes have priority. (visible passes are also listed in the "all passes" table, this is accounted for)
 
 The server side script is meant to be running in eg. a screen session on a linux machine.
+I'm currently working on a caching version that will spare the ressources of heavens-above.com considerably.
+Sorry for the massive abuse, Chris.. I'm a bad person.
 
 The IPv4 address of the server is hardcoded into the arduino code. but it's easily changeable.
 
