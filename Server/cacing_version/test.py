@@ -57,14 +57,13 @@ def get_html(isvisible):
 
 
 def html_to_rows(html):
-
   print 'Parsing HTML into data rows...' 
 
     # In the past, Beautiful Soup hasn't been able to parse the Heavens Above HTML.
     # To get around this problem, we extract just the table of ISS data and set
     # it in a well-formed HTML skeleton. If there is no table of ISS data, create
     # an empty table.
-    try:
+  try:
     Table = html.split(r'<table class="standardTable"', 1)[1] #split after first "standard table" tag, return 2nd portion
     Table = Table.split(r'<tr class="tablehead">', 1)[1] #split after first "tablehead" tag return second portion
     Table = Table.split(r'<tr class="tablehead">', 1)[1] #split after first "tablehead" tag return second portion , again.
@@ -96,16 +95,16 @@ def html_to_rows(html):
   
   return (Rows)
 
-def rows_to_sets(Rows):  #calls the rowparser for all the available rows, returns a set of passes.
+def rows_to_sets(rows):  #calls the rowparser for all the available rows, returns a set of passes.
   index = 0
-  row in Rows:
+  for row in rows:
     (start, max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, mag) = rowparser(row)
-      ##insert age check here?
+    ##insert age check here?
     passes[index]=[start,max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, mag]
     index +=1
   return (passes[:])
 
-def agechecker(passes): //checks the age of the passes
+def agechecker(passes): #checks the age of the passes
   for isspass in passes:
     if (isspass[0]<currenttime):
       passes.remove(isspass)
@@ -177,38 +176,37 @@ while True:
 # UDP, each may be from a different source and it's
 # up to the server to sort this out!)
   data,addr = UDPSock.recvfrom(1024)
-    remoteIP=IP(addr[0]).strNormal() #convert address of packet origin to string
+  remoteIP=IP(addr[0]).strNormal() #convert address of packet origin to string
   #print data.strip(),addr
 
   print '  RX: "%s" @ %s from %s' % (data.rstrip('\n'), ctime(), remoteIP) 
-      if (data.strip() == 'iss?'):
-        try:
+  if (data.strip() == 'iss?'):
+    try:
 
-          currenttime = int(time())
+      currenttime = int(time())
 
-          visiblepasses = agechecker(visiblepasses)
-          regularpasses = agechecker(regularpasses)
+      visiblepasses = agechecker(visiblepasses)
+      regularpasses = agechecker(regularpasses)
         
-#         if visiblepasses:
+#      if visiblepasses:
 
-#         else:
-          visiblepasses = agechecker(refresh_passes(True))
+#      else:
+      visiblepasses = agechecker(refresh_passes(True))
 
-#         if visiblepasses:
+#      if visiblepasses:
           
         
 
-        #brne -> get new data
+       #brne -> get new data
 
-        #parse data
+       #parse data
 
-          MESSAGE=GetNextPassFromRows(allRows,visibleRows)
+      MESSAGE=GetNextPassFromRows(allRows,visibleRows)
   
-        except:
-          MESSAGE='fail at this end, sorry'      
+    except:
+      MESSAGE='fail at this end, sorry'      
     
-        UDPSock.sendto(MESSAGE, (remoteIP, remotePort))
-        print '  TX: %s' % (MESSAGE)
-
+    UDPSock.sendto(MESSAGE, (remoteIP, remotePort))
+    print '  TX: %s' % (MESSAGE)
 
 
