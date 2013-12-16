@@ -254,6 +254,7 @@ regularpasses = refresh_passes(False)
 last_html_get_unix_time = currenttime #last time was NOW!
 
 
+print "Done. Ready and waiting for inbound on port: %s"%string(incomingPort)
 
 
 #print "next visible pass: %s" %next_visible_pass
