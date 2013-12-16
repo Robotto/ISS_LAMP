@@ -263,21 +263,9 @@ last_html_get_unix_time = currenttime #last time was NOW!
 #print "next pass: %s" %next_pass
 while True:
 
-	# Report on all data packets received and
-	# where they came from in each case (as this is
-	# UDP, each may be from a different source and it's
-	# up to the server to sort this out!)
-	data,addr = UDPSock.recvfrom(1024)
-	remoteIP=IP(addr[0]).strNormal() #convert address of packet origin to string
-	#print data.strip(),addr
-
-
-	print
-	print '  RX: "%s" @ %s from %s' % (data.rstrip('\n'), ctime(), remoteIP)
-	print
-
-	currenttime = int(time()) #Update time
-	DST = localtime().tm_isdst #Update DST byte
+	#update time:
+	sleep(0.5) #delay for half a second
+	currenttime = int(time()) #<--------------------------------------------------------------- UNCOMMENT ON RELEASE!
 
 
 
@@ -285,14 +273,12 @@ while True:
 	if currenttime>last_html_get_unix_time+html_cooldown_time:
 		quarantine=False
 		print "Quarantine inactive. Everything is normal...  EVERYTHING!"
-		print
 	else:
 		quarantine=True
 		seconds_to_lift=html_cooldown_time-(currenttime-last_html_get_unix_time)
 		unixtime_at_lift=localtime(currenttime+seconds_to_lift)
 		#print "unixtime_at_lift: %s"%unixtime_at_lift
 		print "Quarantine ACTIVE, here be dragons. normal operations will resume in %s seconds @ %s"%(seconds_to_lift, strftime('%d/%m %H:%M:%S',unixtime_at_lift))
-		print
 
 			#unixtime_at_lift.fromtimestamp('%d/%m %H:%M:%S'))
 
@@ -319,6 +305,16 @@ while True:
 			print "Regular pass data outdated (or empty). But not enough time has passed since last get from %s"%AllURL
 			regularpasses.clear()
 		#this means that there will be no data in the deque, and that the bad data string will be sent if asked.
+
+	# Report on all data packets received and
+	# where they came from in each case (as this is
+	# UDP, each may be from a different source and it's
+	# up to the server to sort this out!)
+	data,addr = UDPSock.recvfrom(1024)
+	remoteIP=IP(addr[0]).strNormal() #convert address of packet origin to string
+	#print data.strip(),addr
+
+	print '	RX: "%s" @ %s from %s' % (data.rstrip('\n'), ctime(), remoteIP)
 
 
 
@@ -353,9 +349,7 @@ while True:
 			MESSAGE='fail at this end, sorry'
 
 		UDPSock.sendto(MESSAGE, (remoteIP, remotePort))
-		print
-		print '	 TX: %s' % (MESSAGE)
-		print
-		print
+		print '	TX: %s' % (MESSAGE)
+
 
 
