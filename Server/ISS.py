@@ -235,128 +235,130 @@ def passes_too_old(passes): #checks the age of the passes returns false if we're
 	else:
 		return(False)
 
-print 'Started @ %s' %(ctime())
 
-DST = localtime().tm_isdst
-if DST:
-	DSTstring = 'active'
-else:
-	DSTstring = 'inactive'
-print 'Daylight savings is %s' % (DSTstring)
+try:
+	print 'Started @ %s' %(ctime())
 
-currenttime = int(time())
-#DEBUG MODE:
-#currenttime = 1383691015
-
-visiblepasses = refresh_passes(True)
-regularpasses = refresh_passes(False)
-
-last_html_get_unix_time = currenttime #last time was NOW!
-
-
-print "Done. Ready and waiting for inbound on port: %s"%string(incomingPort)
-
-
-#print "next visible pass: %s" %next_visible_pass
-#print
-#print "next regular pass: %s" %next_regular_pass
-#print
-#print "next pass: %s" %next_pass
-while True:
-
-	# Report on all data packets received and
-	# where they came from in each case (as this is
-	# UDP, each may be from a different source and it's
-	# up to the server to sort this out!)
-	data,addr = UDPSock.recvfrom(1024)
-	remoteIP=IP(addr[0]).strNormal() #convert address of packet origin to string
-	#print data.strip(),addr
-
-
-	print
-	print '  RX: "%s" @ %s from %s' % (data.rstrip('\n'), ctime(), remoteIP)
-	print
-
-	currenttime = int(time()) #Update time
-	DST = localtime().tm_isdst #Update DST byte
-
-
-
-	#check the age of the passes, refresh them if neccesary, but only if quarantine isn't set:
-	if currenttime>last_html_get_unix_time+html_cooldown_time:
-		quarantine=False
-		print "Quarantine inactive. Everything is normal...  EVERYTHING!"
-		print
+	DST = localtime().tm_isdst
+	if DST:
+		DSTstring = 'active'
 	else:
-		quarantine=True
-		seconds_to_lift=html_cooldown_time-(currenttime-last_html_get_unix_time)
-		unixtime_at_lift=localtime(currenttime+seconds_to_lift)
-		#print "unixtime_at_lift: %s"%unixtime_at_lift
-		print "Quarantine ACTIVE, here be dragons. normal operations will resume in %s seconds @ %s"%(seconds_to_lift, strftime('%d/%m %H:%M:%S',unixtime_at_lift))
+		DSTstring = 'inactive'
+	print 'Daylight savings is %s' % (DSTstring)
+
+	currenttime = int(time())
+	#DEBUG MODE:
+	#currenttime = 1383691015
+
+	visiblepasses = refresh_passes(True)
+	regularpasses = refresh_passes(False)
+
+	last_html_get_unix_time = currenttime #last time was NOW!
+
+
+	print "Done. Ready and waiting for inbound on port: %s"%string(incomingPort)
+
+
+	#print "next visible pass: %s" %next_visible_pass
+	#print
+	#print "next regular pass: %s" %next_regular_pass
+	#print
+	#print "next pass: %s" %next_pass
+	while True:
+
+		# Report on all data packets received and
+		# where they came from in each case (as this is
+		# UDP, each may be from a different source and it's
+		# up to the server to sort this out!)
+		data,addr = UDPSock.recvfrom(1024)
+		remoteIP=IP(addr[0]).strNormal() #convert address of packet origin to string
+		#print data.strip(),addr
+
+
+		print
+		print '  RX: "%s" @ %s from %s' % (data.rstrip('\n'), ctime(), remoteIP)
 		print
 
-			#unixtime_at_lift.fromtimestamp('%d/%m %H:%M:%S'))
-
-
-	if (quarantine is False):
-
-		if passes_too_old(visiblepasses):
-			print "Visible pass list outdated, refreshing..."
-			visiblepasses.clear()
-			visiblepasses=refresh_passes(True)
-			last_html_get_unix_time=currenttime
-
-		if passes_too_old(regularpasses):
-			print "Regular pass list outdated, refreshing..."
-			regularpasses.clear()
-			regularpasses=refresh_passes(False)
-			last_html_get_unix_time=currenttime
-
-	else:
-		if passes_too_old(visiblepasses):
-			print "Visible pass data outdated (or empty). But not enough time has passed since last get from %s"%VisibleURL
-			visiblepasses.clear()
-		if passes_too_old(regularpasses):
-			print "Regular pass data outdated (or empty). But not enough time has passed since last get from %s"%AllURL
-			regularpasses.clear()
-		#this means that there will be no data in the deque, and that the bad data string will be sent if asked.
+		currenttime = int(time()) #Update time
+		DST = localtime().tm_isdst #Update DST byte
 
 
 
-	if (data.strip() == 'iss?'):
-		try:
-			print "Checking for passes."
+		#check the age of the passes, refresh them if neccesary, but only if quarantine isn't set:
+		if currenttime>last_html_get_unix_time+html_cooldown_time:
+			quarantine=False
+			print "Quarantine inactive. Everything is normal...  EVERYTHING!"
+			print
+		else:
+			quarantine=True
+			seconds_to_lift=html_cooldown_time-(currenttime-last_html_get_unix_time)
+			unixtime_at_lift=localtime(currenttime+seconds_to_lift)
+			#print "unixtime_at_lift: %s"%unixtime_at_lift
+			print "Quarantine ACTIVE, here be dragons. normal operations will resume in %s seconds @ %s"%(seconds_to_lift, strftime('%d/%m %H:%M:%S',unixtime_at_lift))
+			print
 
-			next_visible_pass = getnextpass(visiblepasses)
-			next_regular_pass = getnextpass(regularpasses)
-			next_pass = which_pass_is_next(next_visible_pass,next_regular_pass)
-
-			print 'The next pass of the ISS above %s, %s is:' % (latitude, longtitude)
-
-			#next_pass[9] is magnitude, which is 'None' if it's not a visible pass...
-
-			if next_pass[9] is None:
-				print "  Not visible, and will start in %s seconds @ %s" %(next_pass[6]-currenttime, next_pass[0].strftime('%d/%m %H:%M:%S'))
-				MESSAGE='R\0%s\0%s\0%s\0%s\0%s\0%s\0%s' % (DST, next_pass[6],next_pass[3],next_pass[7],next_pass[4],next_pass[8],next_pass[5])
-
-
-			else:
-				print "  VISIBLE! It will start in %s seconds @ %s" %(next_pass[6]-currenttime, next_pass[0].strftime('%d/%m %H:%M:%S'))
-				MESSAGE='V\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s' % (DST, next_pass[9], next_pass[6],next_pass[3],next_pass[7],next_pass[4],next_pass[8],next_pass[5])
-				#	return (start, max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, mag)
-				#			  0     1    2     3     4     5        6        7        8      9
-				#	(DST, V_mag, V_startUnix, V_loc1, V_maxUnix, V_loc2, V_endUnix, V_loc3)
+				#unixtime_at_lift.fromtimestamp('%d/%m %H:%M:%S'))
 
 
+		if (quarantine is False):
+
+			if passes_too_old(visiblepasses):
+				print "Visible pass list outdated, refreshing..."
+				visiblepasses.clear()
+				visiblepasses=refresh_passes(True)
+				last_html_get_unix_time=currenttime
+
+			if passes_too_old(regularpasses):
+				print "Regular pass list outdated, refreshing..."
+				regularpasses.clear()
+				regularpasses=refresh_passes(False)
+				last_html_get_unix_time=currenttime
+
+		else:
+			if passes_too_old(visiblepasses):
+				print "Visible pass data outdated (or empty). But not enough time has passed since last get from %s"%VisibleURL
+				visiblepasses.clear()
+			if passes_too_old(regularpasses):
+				print "Regular pass data outdated (or empty). But not enough time has passed since last get from %s"%AllURL
+				regularpasses.clear()
+			#this means that there will be no data in the deque, and that the bad data string will be sent if asked.
 
 
-		except:
-			MESSAGE='fail at this end, sorry'
 
-		UDPSock.sendto(MESSAGE, (remoteIP, remotePort))
-		print
-		print '	 TX: %s' % (MESSAGE)
-		print
-		print
+		if (data.strip() == 'iss?'):
+			try:
+				print "Checking for passes."
+
+				next_visible_pass = getnextpass(visiblepasses)
+				next_regular_pass = getnextpass(regularpasses)
+				next_pass = which_pass_is_next(next_visible_pass,next_regular_pass)
+
+				print 'The next pass of the ISS above %s, %s is:' % (latitude, longtitude)
+
+				#next_pass[9] is magnitude, which is 'None' if it's not a visible pass...
+
+				if next_pass[9] is None:
+					print "  Not visible, and will start in %s seconds @ %s" %(next_pass[6]-currenttime, next_pass[0].strftime('%d/%m %H:%M:%S'))
+					MESSAGE='R\0%s\0%s\0%s\0%s\0%s\0%s\0%s' % (DST, next_pass[6],next_pass[3],next_pass[7],next_pass[4],next_pass[8],next_pass[5])
 
 
+				else:
+					print "  VISIBLE! It will start in %s seconds @ %s" %(next_pass[6]-currenttime, next_pass[0].strftime('%d/%m %H:%M:%S'))
+					MESSAGE='V\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s' % (DST, next_pass[9], next_pass[6],next_pass[3],next_pass[7],next_pass[4],next_pass[8],next_pass[5])
+					#	return (start, max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, mag)
+					#			  0     1    2     3     4     5        6        7        8      9
+					#	(DST, V_mag, V_startUnix, V_loc1, V_maxUnix, V_loc2, V_endUnix, V_loc3)
+
+
+
+
+			except:
+				MESSAGE='fail at this end, sorry'
+
+			UDPSock.sendto(MESSAGE, (remoteIP, remotePort))
+			print
+			print '	 TX: %s' % (MESSAGE)
+			print
+			print
+except Exception as e:
+    print "An error occurred, here's a thing: " + str(e)
