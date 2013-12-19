@@ -62,13 +62,13 @@ elevation = 40		#meters above sea level
 #http://heavens-above.com/PassSummary.aspx?showAll=f&satid=25544&lat=56.156361&lng=10.188631&alt=40&tz=CET
 #http://heavens-above.com/PassSummary.aspx?showAll=t&satid=25544&lat=56.156361&lng=10.188631&alt=40&tz=CET
 
-VisibleURL = 'http://heavens-above.com/PassSummary.aspx?showAll=f&satid=25544&lat=%s&lng=%s&alt=%s&tz=CET' %(latitude, longtitude, elevation)
-AllURL = 'http://heavens-above.com/PassSummary.aspx?showAll=t&satid=25544&lat=%s&lng=%s&alt=%s&tz=CET' %(latitude, longtitude, elevation)
+#VisibleURL = 'http://heavens-above.com/PassSummary.aspx?showAll=f&satid=25544&lat=%s&lng=%s&alt=%s&tz=CET' %(latitude, longtitude, elevation)
+#AllURL = 'http://heavens-above.com/PassSummary.aspx?showAll=t&satid=25544&lat=%s&lng=%s&alt=%s&tz=CET' %(latitude, longtitude, elevation)
 
-#VisibleURL = 'http://62.212.66.171/iss/visible.htm'
+VisibleURL = 'http://62.212.66.171/iss/visible.htm'
 #VisibleURL = 'http://62.212.66.171/iss/visible_but_no_passes.htm'
 
-#AllURL = 'http://62.212.66.171/iss/regular.htm'
+AllURL = 'http://62.212.66.171/iss/regular.htm'
 #AllURL = 'http://62.212.66.171/iss/visible_but_no_passes.htm'
 
 last_html_get_unix_time = 0
