@@ -62,13 +62,13 @@ elevation = 40		#meters above sea level
 #http://heavens-above.com/PassSummary.aspx?showAll=f&satid=25544&lat=56.156361&lng=10.188631&alt=40&tz=CET
 #http://heavens-above.com/PassSummary.aspx?showAll=t&satid=25544&lat=56.156361&lng=10.188631&alt=40&tz=CET
 
-#VisibleURL = 'http://heavens-above.com/PassSummary.aspx?showAll=f&satid=25544&lat=%s&lng=%s&alt=%s&tz=CET' %(latitude, longtitude, elevation)
-#AllURL = 'http://heavens-above.com/PassSummary.aspx?showAll=t&satid=25544&lat=%s&lng=%s&alt=%s&tz=CET' %(latitude, longtitude, elevation)
+VisibleURL = 'http://heavens-above.com/PassSummary.aspx?showAll=f&satid=25544&lat=%s&lng=%s&alt=%s&tz=CET' %(latitude, longtitude, elevation)
+AllURL = 'http://heavens-above.com/PassSummary.aspx?showAll=t&satid=25544&lat=%s&lng=%s&alt=%s&tz=CET' %(latitude, longtitude, elevation)
 
-VisibleURL = 'http://62.212.66.171/iss/visible.htm'
+#VisibleURL = 'http://62.212.66.171/iss/visible.htm'
 #VisibleURL = 'http://62.212.66.171/iss/visible_but_no_passes.htm'
 
-AllURL = 'http://62.212.66.171/iss/regular.htm'
+#AllURL = 'http://62.212.66.171/iss/regular.htm'
 #AllURL = 'http://62.212.66.171/iss/visible_but_no_passes.htm'
 
 last_html_get_unix_time = 0
@@ -256,7 +256,7 @@ try:
 	last_html_get_unix_time = currenttime #last time was NOW!
 
 
-	print "Done. Ready and waiting for inbound on port: %s"%string(incomingPort)
+	print "Done. Ready and waiting for inbound on port: %s"%incomingPort
 
 
 	#print "next visible pass: %s" %next_visible_pass
@@ -276,7 +276,7 @@ try:
 
 
 		print
-		print '  RX: "%s" @ %s from %s' % (data.rstrip('\n'), ctime(), remoteIP)
+		print ' RX: "%s" @ %s from %s' % (data.rstrip('\n'), ctime(), remoteIP)
 		print
 
 		currenttime = int(time()) #Update time
@@ -338,12 +338,12 @@ try:
 				#next_pass[9] is magnitude, which is 'None' if it's not a visible pass...
 
 				if next_pass[9] is None:
-					print "  Not visible, and will start in %s seconds @ %s" %(next_pass[6]-currenttime, next_pass[0].strftime('%d/%m %H:%M:%S'))
+					print "Not visible, and will start in %s seconds @ %s" %(next_pass[6]-currenttime, next_pass[0].strftime('%d/%m %H:%M:%S'))
 					MESSAGE='R\0%s\0%s\0%s\0%s\0%s\0%s\0%s' % (DST, next_pass[6],next_pass[3],next_pass[7],next_pass[4],next_pass[8],next_pass[5])
 
 
 				else:
-					print "  VISIBLE! It will start in %s seconds @ %s" %(next_pass[6]-currenttime, next_pass[0].strftime('%d/%m %H:%M:%S'))
+					print "VISIBLE! It will start in %s seconds @ %s" %(next_pass[6]-currenttime, next_pass[0].strftime('%d/%m %H:%M:%S'))
 					MESSAGE='V\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s' % (DST, next_pass[9], next_pass[6],next_pass[3],next_pass[7],next_pass[4],next_pass[8],next_pass[5])
 					#	return (start, max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, mag)
 					#			  0     1    2     3     4     5        6        7        8      9
@@ -357,7 +357,7 @@ try:
 
 			UDPSock.sendto(MESSAGE, (remoteIP, remotePort))
 			print
-			print '	 TX: %s' % (MESSAGE)
+			print ' TX: %s' % (MESSAGE)
 			print
 			print
 except Exception as e:
