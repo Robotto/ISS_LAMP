@@ -11,12 +11,12 @@ which is parsed (upon request) from heavens-above.com by the 'Server' side pytho
 Both visible and invisible passes are parsed, visible passes have priority. (visible passes are also listed in the "all passes" table, this is accounted for)
 
 The server side script is meant to be running in eg. a screen session on a linux machine.
-I'm currently working on a caching version that will spare the ressources of heavens-above.com considerably.
-Sorry for the massive abuse, Chris.. I'm a bad person.
+A caching version that spares the ressources of heavens-above.com considerably, has been implemented, since HA started to limit page hits per hour pr device.
+This was my chance to clean upthe python a bit, so it's actually much nicer now.
 
 The IPv4 address of the server is hardcoded into the arduino code. but it's easily changeable.
 
-The location, that the ISS data lookups are based on, is hardcoded into the python script, but is also easily changeable.
+The location (LATTITUDE, LONGTITUDE), that the ISS data lookups are based on, is hardcoded into the python script, but is also easily changeable.
 
 I use an old VFD display as my debug window on the arduino. It should be quite easy to change it to the serial interface, but beware the hardware.
 
