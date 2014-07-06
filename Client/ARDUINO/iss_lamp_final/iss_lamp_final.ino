@@ -189,7 +189,7 @@ void setup() {
     VFDchar(0,0x16); //cursor off.
 
     //PWM_ramp(false); //lights ramp down
-    analogWrite(PWM_PIN,0); //lights off immediately
+    digitalWrite(PWM_PIN,true);
 }
 
 
