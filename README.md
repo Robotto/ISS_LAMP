@@ -22,7 +22,7 @@ I use an old VFD display as my debug window on the arduino. It should be quite e
 
 This is still very much a prototype, A work in progress, an ongoing thing. It is, nor will it ever, be "done".
 
-Code for this project has been copied from all over the interwebs, i'm sorry, but i haven't kept track of my sources. If you feel wronged, drop me a line and i'll give credit where it's due.
+Some of the code in this project has been copied from all over the interwebs, i'm sorry, but i haven't kept track of my sources. If you feel wronged, drop me a line and i'll give credit where it's due.
 
 I will however take full credit for the VFD code, which sits at the bottom of the giant pile of shitty code that i call an arduino project.
 
