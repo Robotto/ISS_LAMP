@@ -20,7 +20,7 @@ The location (LATTITUDE, LONGTITUDE), that the ISS data lookups are based on, is
 
 I use an old VFD display as my debug window on the arduino. It should be quite easy to change it to the serial interface, but beware the hardware.
 
-This is still very much a prototype, so expect no nice looking code from here. It has not, nor will it ever, be meant for relese into the wild.
+This is still very much a prototype, A work in progress, an ongoing thing. It is, nor will it ever, be "done".
 
 Code for this project has been copied from all over the interwebs, i'm sorry, but i haven't kept track of my sources. If you feel wronged, drop me a line and i'll give credit where it's due.
 
