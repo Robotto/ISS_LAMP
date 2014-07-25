@@ -55,7 +55,7 @@ UDPSock.bind(listen_addr)
 # Global Vars.
 lat = 0
 lon = 0
-timezone = tz.tzlocal()
+timezone = tz.tzlocal() #changed as soon as a lookup occurs
 
 
 
@@ -189,7 +189,7 @@ def rowparser(row):
 	start_utc = datetime(*strptime(startStr, '%d %b %Y %H:%M:%S')[0:7])
 	start_utc = start_utc.replace(tzinfo=from_zone)
 
-	start = start_utc.astimezone(to_zone) #in local time from here
+	start = start_utc.astimezone(to_zone) #in local time from here - local time for whoever is doing the lookup
 	startUnix=int(mktime(start.timetuple()))
 
 	#print 'pass start UTC: %s' %start_utc
