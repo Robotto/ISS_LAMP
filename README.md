@@ -16,7 +16,7 @@ This was my chance to clean upthe python a bit, so it's actually much nicer now.
 
 The IPv4 address of the server is hardcoded into the arduino code. but it's easily changeable.
 
-The location (LATTITUDE, LONGTITUDE), that the ISS data lookups are based on, is hardcoded into the python script, but is also easily changeable.
+The location (LATTITUDE, LONGTITUDE, TIMEZONE), that the ISS data lookups are based on, are no longer hardcoded into the python script, but managed by doing a lookup in the maxmind geolite database [ http://dev.maxmind.com/geoip/legacy/geolite/ ] .
 
 I use an old VFD display as my debug window on the arduino. It should be quite easy to change it to the serial interface, but beware the hardware.
 
