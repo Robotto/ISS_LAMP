@@ -74,11 +74,11 @@ def refresh_passes(isvisible):
 def get_html(isvisible):
 
 	#not providing heavens-above with a tz gives you the data in utc time.. which is what you want. :)
-	VisibleURL = 'http://heavens-above.com/PassSummary.aspx?showAll=f&satid=25544&lat=%s&lng=%s&alt=40' %(lat, lon)
-	AllURL = 'http://heavens-above.com/PassSummary.aspx?showAll=t&satid=25544&lat=%s&lng=%s&alt=40' %(lat, lon)
+	VisibleURL = 'http://heavens-above.com/PassSummary.aspx?showAll=f&satid=25544&lat=%s&lng=%s&alt=12' %(lat, lon)
+	AllURL = 'http://heavens-above.com/PassSummary.aspx?showAll=t&satid=25544&lat=%s&lng=%s&alt=12' %(lat, lon)
 
-	#http://heavens-above.com/PassSummary.aspx?showAll=f&satid=25544&lat=56.156361&lng=10.188631&alt=40&tz=CET
-	#http://heavens-above.com/PassSummary.aspx?showAll=t&satid=25544&lat=56.156361&lng=10.188631&alt=40&tz=CET
+	#http://heavens-above.com/PassSummary.aspx?showAll=f&satid=25544&lat=56.156361&lng=10.188631&alt=12&tz=CET
+	#http://heavens-above.com/PassSummary.aspx?showAll=t&satid=25544&lat=56.156361&lng=10.188631&alt=12&tz=CET
 
 	#VisibleURL = 'http://62.212.66.171/iss/visible.htm'
 	#VisibleURL = 'http://62.212.66.171/iss/visible_but_no_passes.htm'
