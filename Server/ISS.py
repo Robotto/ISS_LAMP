@@ -292,7 +292,7 @@ try:
 		remoteIP=IP(addr[0]).strNormal() #convert address of packet origin to string
 		#print data.strip(),addr
 
-		gi = GeoIP.open("GeoLiteCity.dat", GeoIP.GEOIP_STANDARD)
+		gi = GeoIP.open("GeoLiteCity.dat", GeoIP.GEOIP_STANDARD) #get your own at http://dev.maxmind.com/geoip/legacy/geolite/
 		gir = gi.record_by_addr("90.185.22.109")
 		#gir = gi.record_by_addr(remoteIP)
 
