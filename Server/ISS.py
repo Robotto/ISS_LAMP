@@ -1,4 +1,10 @@
 #!/usr/bin/env python
+
+##living up to the license:
+##This product includes GeoLite data created by MaxMind, available from
+## <a href="http://www.maxmind.com">http://www.maxmind.com</a>.
+
+
 # -*- coding: UTF-8 -*-
 #																																								 /------------------------------\
 #																																									 |															|
@@ -20,56 +26,39 @@
 #
 
 import mechanize
+import GeoIP
+
 from BeautifulSoup import BeautifulSoup
-from datetime import datetime, date, timedelta
+
+from datetime import datetime, date
+from dateutil import tz
+
 from time import strftime, strptime, mktime, struct_time, time, ctime, localtime, sleep
 from getopt import getopt
-import os, sys
+#import os, sys
 #import envoy #calls bash commands as seperate threads.. unused.. for now..
 import collections #used to form a collection of passes
 
 import socket
 from IPy import IP
 
+
 incomingPort = 1337
 remotePort = 1337
 
 # A UDP server listening for packets on port 1337:
 UDPSock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-
-# Listen on port 1337, FTW!
-# (to all IP addresses on this system)
 listen_addr = ("",incomingPort)
 UDPSock.bind(listen_addr)
 
 
-#Collections to store the passes:
-#visiblepasses = collections.deque(maxlen=50)
-#regularpasses = collections.deque(maxlen=50)
+# Global Vars.
+lat = 0
+lon = 0
+timezone = tz.tzlocal()
 
-# Personalization.
-#Home:
-latitude = 56.156361
-longtitude = 10.188631
-elevation = 40		#meters above sea level
 
-#OHM:
-#latitude = 52.6925433
-#longtitude = 4.7553544
 
-#HTML GET STUFF:
-
-#http://heavens-above.com/PassSummary.aspx?showAll=f&satid=25544&lat=56.156361&lng=10.188631&alt=40&tz=CET
-#http://heavens-above.com/PassSummary.aspx?showAll=t&satid=25544&lat=56.156361&lng=10.188631&alt=40&tz=CET
-
-VisibleURL = 'http://heavens-above.com/PassSummary.aspx?showAll=f&satid=25544&lat=%s&lng=%s&alt=%s&tz=CET' %(latitude, longtitude, elevation)
-AllURL = 'http://heavens-above.com/PassSummary.aspx?showAll=t&satid=25544&lat=%s&lng=%s&alt=%s&tz=CET' %(latitude, longtitude, elevation)
-
-#VisibleURL = 'http://62.212.66.171/iss/visible.htm'
-#VisibleURL = 'http://62.212.66.171/iss/visible_but_no_passes.htm'
-
-#AllURL = 'http://62.212.66.171/iss/regular.htm'
-#AllURL = 'http://62.212.66.171/iss/visible_but_no_passes.htm'
 
 last_html_get_unix_time = 0
 html_cooldown_time = 86400 #24 hrs
@@ -84,9 +73,23 @@ def refresh_passes(isvisible):
 
 def get_html(isvisible):
 
+	#not providing heavens-above with a tz gives you the data in utc time.. which is what you want. :)
+	VisibleURL = 'http://heavens-above.com/PassSummary.aspx?showAll=f&satid=25544&lat=%s&lng=%s&alt=40' %(lat, lon)
+	AllURL = 'http://heavens-above.com/PassSummary.aspx?showAll=t&satid=25544&lat=%s&lng=%s&alt=40' %(lat, lon)
+
+	#http://heavens-above.com/PassSummary.aspx?showAll=f&satid=25544&lat=56.156361&lng=10.188631&alt=40&tz=CET
+	#http://heavens-above.com/PassSummary.aspx?showAll=t&satid=25544&lat=56.156361&lng=10.188631&alt=40&tz=CET
+
+	#VisibleURL = 'http://62.212.66.171/iss/visible.htm'
+	#VisibleURL = 'http://62.212.66.171/iss/visible_but_no_passes.htm'
+
+	#AllURL = 'http://62.212.66.171/iss/regular.htm'
+	#AllURL = 'http://62.212.66.171/iss/visible_but_no_passes.htm'
+
 	br = mechanize.Browser()
 	br.set_handle_robots(False)
 	# Get the ISS PASSES pages:
+
 
 	if isvisible:
 		print 'Retrieving list of visible passes'
@@ -175,27 +178,41 @@ def rowparser(row):
 	loc2 = '%s-%s' % (az2, alt2)
 	loc3 = '%s-%s' % (az3, alt3)
 
-	startStr = '%s %s %s' % (dStr, date.today().year, t1Str)
-	start = datetime(*strptime(startStr, '%d %b %Y %H:%M:%S')[0:7])
-	startUnix = int(mktime(strptime(startStr, '%d %b %Y %H:%M:%S')))
-	#print("Starttime unix string: %s") % (startUnix)
+
+	#time magic - source timezone is GMT/UTC, remember that!
+	#look at: http://stackoverflow.com/questions/4770297/python-convert-utc-datetime-string-to-local-datetime
+
+	from_zone = tz.tzutc()
+	to_zone = tz.gettz(timezone) #determined from the IP of the source of the request
+
+	startStr = '%s %s %s' % (dStr, date.today().year, t1Str) #this will break if next pass is in next calendar year.
+	start_utc = datetime(*strptime(startStr, '%d %b %Y %H:%M:%S')[0:7])
+	start_utc = start_utc.replace(tzinfo=from_zone)
+
+	start = start_utc.astimezone(to_zone) #in local time from here
+	startUnix=int(mktime(start.timetuple()))
+
+	#print 'pass start UTC: %s' %start_utc
+	#print 'pass start LOCAL: %s' %start_localtime
+	#print 'Starttime unix string: %s' % startUnix
+
+
 
 	maxStr = '%s %s %s'	% (dStr, date.today().year, t2Str)
-	max = datetime(*strptime(maxStr, '%d %b %Y %H:%M:%S')[0:7])
-	maxUnix = int(mktime(strptime(maxStr, '%d %b %Y %H:%M:%S')))
+	max_utc = datetime(*strptime(maxStr, '%d %b %Y %H:%M:%S')[0:7])
+	max_utc = max_utc.replace(tzinfo=from_zone)
+	max = max_utc.astimezone(to_zone) #in local time from here
+	maxUnix = int(mktime(max.timetuple()))
 
-	#print("Maxtime unix string: %s") % (maxUnix)
+	#print 'Maxtime unix string: %s' % maxUnix
 
 	endStr = '%s %s %s' % (dStr, date.today().year, t3Str)
-	end = datetime(*strptime(endStr, '%d %b %Y %H:%M:%S')[0:7])
-	endUnix = int(mktime(strptime(endStr, '%d %b %Y %H:%M:%S')))
+	end_utc = datetime(*strptime(endStr, '%d %b %Y %H:%M:%S')[0:7])
+	end_utc = end_utc.replace(tzinfo=from_zone)
+	end = end_utc.astimezone(to_zone) #in local time from here
+	endUnix = int(mktime(end.timetuple()))
 
-	#print("Endtime unix string: %s") % (endUnix)
-
-	#if isvisible:
-	#	return (start, max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, mag)
-	#else:
-	#	return (start, max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, )
+	#print 'Endtime unix string: %s'"' % endUnix
 
 	return (start, max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, mag)
 #			  0     1    2    3     4     5         6        7        8      9
@@ -210,6 +227,7 @@ def which_pass_is_next(visible,regular): #determines whether the next visible or
 	if visible is None:
 		return regular
 	elif regular[6]+600 > visible[6]: #do a ten minute check to see if the visible pass isn't a delayed subset of the regular passes
+									  #(regular passes always start and end at 10degrees elevation, visible passes sometimes start higher)
 		return visible
 	else:
 		return regular
@@ -246,17 +264,17 @@ try:
 		DSTstring = 'inactive'
 	print 'Daylight savings is %s' % (DSTstring)
 
-	currenttime = int(time())
+	#currenttime = int(time())
 	#DEBUG MODE:
 	#currenttime = 1383691015
 
-	visiblepasses = refresh_passes(True)
-	regularpasses = refresh_passes(False)
+	#visiblepasses = refresh_passes(True,56.0,10.0)
+	#regularpasses = refresh_passes(False,56.0,10.0)
 
-	last_html_get_unix_time = currenttime #last time was NOW!
+	#last_html_get_unix_time = currenttime #last time was NOW!
 
 
-	print "Done. Ready and waiting for inbound on port: %s"%incomingPort
+	print "Ready and waiting for inbound on port: %s"%incomingPort
 
 
 	#print "next visible pass: %s" %next_visible_pass
@@ -274,15 +292,34 @@ try:
 		remoteIP=IP(addr[0]).strNormal() #convert address of packet origin to string
 		#print data.strip(),addr
 
+		gi = GeoIP.open("GeoLiteCity.dat", GeoIP.GEOIP_STANDARD)
+		gir = gi.record_by_addr("90.185.22.109")
+		#gir = gi.record_by_addr(remoteIP)
+
+		lat=gir['latitude']
+		lon=gir['longitude']
+		timezone=gir['time_zone']
 
 		print
 		print ' RX: "%s" @ %s from %s' % (data.rstrip('\n'), ctime(), remoteIP)
+		print ' Latitude: %s' %lat
+		print ' Longitude: %s' %lon
+		print ' Timezone: %s' %timezone
 		print
+
 
 		currenttime = int(time()) #Update time
 		DST = localtime().tm_isdst #Update DST byte
 
+		if last_html_get_unix_time==0: #if passes have never been recieved = first run.
+			visiblepasses = refresh_passes(True)
+			regularpasses = refresh_passes(False)
+			firstIP=remoteIP
+			last_html_get_unix_time=currenttime
 
+		if remoteIP!=firstIP:
+			print '     WARNING:     '
+			print '     Change of client IP address. Pass data most likely invalid!!     '
 
 		#check the age of the passes, refresh them if neccesary, but only if quarantine isn't set:
 		if currenttime>last_html_get_unix_time+html_cooldown_time:
@@ -297,29 +334,27 @@ try:
 			print "Quarantine ACTIVE, here be dragons. normal operations will resume in %s seconds @ %s"%(seconds_to_lift, strftime('%d/%m %H:%M:%S',unixtime_at_lift))
 			print
 
-				#unixtime_at_lift.fromtimestamp('%d/%m %H:%M:%S'))
-
 
 		if (quarantine is False):
 
 			if passes_too_old(visiblepasses):
-				print "Visible pass list outdated, refreshing..."
+				print "Visible pass list for %s outdated, refreshing..." %(remoteIP)
 				visiblepasses.clear()
 				visiblepasses=refresh_passes(True)
 				last_html_get_unix_time=currenttime
 
 			if passes_too_old(regularpasses):
-				print "Regular pass list outdated, refreshing..."
+				print "Regular pass list for %s outdated, refreshing..." &(remoteIP)
 				regularpasses.clear()
 				regularpasses=refresh_passes(False)
 				last_html_get_unix_time=currenttime
 
 		else:
 			if passes_too_old(visiblepasses):
-				print "Visible pass data outdated (or empty). But not enough time has passed since last get from %s"%VisibleURL
+				print "Visible pass data outdated (or empty). But not enough time has passed since last get from heavens-above.com"
 				visiblepasses.clear()
 			if passes_too_old(regularpasses):
-				print "Regular pass data outdated (or empty). But not enough time has passed since last get from %s"%AllURL
+				print "Regular pass data outdated (or empty). But not enough time has passed since last get from heavens-above.com"
 				regularpasses.clear()
 			#this means that there will be no data in the deque, and that the bad data string will be sent if asked.
 
@@ -333,7 +368,7 @@ try:
 				next_regular_pass = getnextpass(regularpasses)
 				next_pass = which_pass_is_next(next_visible_pass,next_regular_pass)
 
-				print 'The next pass of the ISS above %s, %s is:' % (latitude, longtitude)
+				print 'The next pass of the ISS above %s, %s is:' % (lat,lon)
 
 				#next_pass[9] is magnitude, which is 'None' if it's not a visible pass...
 
