@@ -17,7 +17,6 @@ VFD to class .. or not.. 800 lines of code isn't that bad.. is it?
 
 Before shipping:
 -Internalize heavens-above html scrape? .. probably not
--Internalize geo-location, so coordinates are a part of the lookup
 */
 
 #include <SPI.h>
@@ -59,22 +58,22 @@ unsigned long passStartEpoch;
 unsigned long passMaxEpoch;
 unsigned long passEndEpoch;
 unsigned long secs_to_next_pass;
+
+//in clock format:
 unsigned long hh_to_next_pass;
 unsigned long mm_to_next_pass;
 unsigned long ss_to_next_pass;
+
+boolean passVisible;
 String passMagnitude;
 String passStartDir;
 String passMaxDir;
 String passEndDir;
 
 //Statemachine booleans:
-boolean passVisible;
-boolean keepcalmandcarryon = true;
-boolean firstWarningGiven = false;
-boolean passInProgress = false;
-boolean ongoingPassEndInfoPrint = true;
-boolean ongoingPassMaxInfoPrint = true;
-boolean print_text=true;
+unsigned int state=1; //start at 1 since first pass-get (state 0) is done in setup
+
+
 
 //hardware setup:
 int PWM_PIN=9;
@@ -223,214 +222,116 @@ void loop()
 
 timekeeper();
 
-    if (keepcalmandcarryon)
-    {
-      if(print_text) //will break if more than 99 hours to next pass...
-      {
+
+switch(state)
+  {
+  case 0:
+        sendISSpacket(robottobox); //ask robottobox for new iss data
+        UDPwait(true);
+        handle_ISS_udp();
+        //state=1;
+        break;
+
+  case 1:
         VFDclear();
-        if (passVisible) VFDstring("Visible pass T-"); //15
-        else VFDstring("Regular pass    T-");
-        print_text=false;
-      }
+        if (passVisible) VFDstring("Visible pass T-LOADING        LOADING"); //15
+        else VFDstring("Regular pass    T-LOADING        LOADING");
+        //state=2;
+        break;
 
-      if(passVisible) VFDsetpos(15);
-      else VFDsetpos(18);
-      if(hh_to_next_pass<10) VFDchar(0,'0');
-      VFDstring(String(hh_to_next_pass));
-      VFDchar(0,':');
-      if(mm_to_next_pass<10) VFDchar(0,'0');
-      VFDstring(String(mm_to_next_pass));
-      VFDchar(0,':');
-      if(ss_to_next_pass<10) VFDchar(0,'0');
-      VFDstring(String(ss_to_next_pass));
-      if (passVisible)
-      {
-        VFDstring(" M:");
-        VFDstring(passMagnitude);
-      }
-
-      clock();
-    }
-
-
-
-
-/*
-  SSSSSSSSSSSSSSS      tttt                                    tttt                                                                                          hhhhhhh               iiii
- SS:::::::::::::::S  ttt:::t                                 ttt:::t                                                                                          h:::::h              i::::i
-S:::::SSSSSS::::::S  t:::::t                                 t:::::t                                                                                          h:::::h               iiii
-S:::::S     SSSSSSS  t:::::t                                 t:::::t                                                                                          h:::::h
-S:::::S        ttttttt:::::ttttttt      aaaaaaaaaaaaa  ttttttt:::::ttttttt        eeeeeeeeeeee       mmmmmmm    mmmmmmm     aaaaaaaaaaaaa      cccccccccccccccch::::h hhhhh       iiiiiiinnnn  nnnnnnnn        eeeeeeeeeeee
-S:::::S        t:::::::::::::::::t      a::::::::::::a t:::::::::::::::::t      ee::::::::::::ee   mm:::::::m  m:::::::mm   a::::::::::::a   cc:::::::::::::::ch::::hh:::::hhh    i:::::in:::nn::::::::nn    ee::::::::::::ee   ::::::
- S::::SSSS     t:::::::::::::::::t      aaaaaaaaa:::::at:::::::::::::::::t     e::::::eeeee:::::eem::::::::::mm::::::::::m  aaaaaaaaa:::::a c:::::::::::::::::ch::::::::::::::hh   i::::in::::::::::::::nn  e::::::eeeee:::::ee ::::::
-  SS::::::SSSSStttttt:::::::tttttt               a::::atttttt:::::::tttttt    e::::::e     e:::::em::::::::::::::::::::::m           a::::ac:::::::cccccc:::::ch:::::::hhh::::::h  i::::inn:::::::::::::::ne::::::e     e:::::e ::::::
-    SSS::::::::SS    t:::::t              aaaaaaa:::::a      t:::::t          e:::::::eeeee::::::em:::::mmm::::::mmm:::::m    aaaaaaa:::::ac::::::c     ccccccch::::::h   h::::::h i::::i  n:::::nnnn:::::ne:::::::eeeee::::::e
-       SSSSSS::::S   t:::::t            aa::::::::::::a      t:::::t          e:::::::::::::::::e m::::m   m::::m   m::::m  aa::::::::::::ac:::::c             h:::::h     h:::::h i::::i  n::::n    n::::ne:::::::::::::::::e
-            S:::::S  t:::::t           a::::aaaa::::::a      t:::::t          e::::::eeeeeeeeeee  m::::m   m::::m   m::::m a::::aaaa::::::ac:::::c             h:::::h     h:::::h i::::i  n::::n    n::::ne::::::eeeeeeeeeee
-            S:::::S  t:::::t    tttttta::::a    a:::::a      t:::::t    tttttte:::::::e           m::::m   m::::m   m::::ma::::a    a:::::ac::::::c     ccccccch:::::h     h:::::h i::::i  n::::n    n::::ne:::::::e            ::::::
-SSSSSSS     S:::::S  t::::::tttt:::::ta::::a    a:::::a      t::::::tttt:::::te::::::::e          m::::m   m::::m   m::::ma::::a    a:::::ac:::::::cccccc:::::ch:::::h     h:::::hi::::::i n::::n    n::::ne::::::::e           ::::::
-S::::::SSSSSS:::::S  tt::::::::::::::ta:::::aaaa::::::a      tt::::::::::::::t e::::::::eeeeeeee  m::::m   m::::m   m::::ma:::::aaaa::::::a c:::::::::::::::::ch:::::h     h:::::hi::::::i n::::n    n::::n e::::::::eeeeeeee   ::::::
-S:::::::::::::::SS     tt:::::::::::tt a::::::::::aa:::a       tt:::::::::::tt  ee:::::::::::::e  m::::m   m::::m   m::::m a::::::::::aa:::a cc:::::::::::::::ch:::::h     h:::::hi::::::i n::::n    n::::n  ee:::::::::::::e
- SSSSSSSSSSSSSSS         ttttttttttt    aaaaaaaaaa  aaaa         ttttttttttt      eeeeeeeeeeeeee  mmmmmm   mmmmmm   mmmmmm  aaaaaaaaaa  aaaa   cccccccccccccccchhhhhhh     hhhhhhhiiiiiiii nnnnnn    nnnnnn    eeeeeeeeeeeeee
-*/
-  if (currentEpoch>=passEndEpoch) //PASS END!
-  {
-    VFDclear();
-    VFDstring("End of pass.");
-    PWM_ramp(false); //lights fade off
-    VFDclear();
-    sendISSpacket(robottobox); //ask robottobox for new iss data
-    UDPwait(true);
-    handle_ISS_udp();
-    keepcalmandcarryon=true;
-    print_text=true;
-    firstWarningGiven=false;
-    passInProgress=false;
-    ongoingPassEndInfoPrint=true;
-    ongoingPassMaxInfoPrint=true;
-  }
-
-  else if (passInProgress)
-  {
-    if((currentEpoch<=passMaxEpoch) && passVisible)
+  case 2:       //probably could be called default state..
+        if(passVisible) VFDsetpos(15);
+        else VFDsetpos(18);
+        if(hh_to_next_pass<10) VFDchar(0,'0');
+        VFDstring(String(hh_to_next_pass));
+        VFDchar(0,':');
+        if(mm_to_next_pass<10) VFDchar(0,'0');
+        VFDstring(String(mm_to_next_pass));
+        VFDchar(0,':');
+        if(ss_to_next_pass<10) VFDchar(0,'0');
+        VFDstring(String(ss_to_next_pass));
+        if (passVisible)
         {
-
-        if(ongoingPassMaxInfoPrint)
-          {
-          VFDscrollMode(false);
-          VFDclear();
-          VFDstring("Visible pass max @");
-          VFDstring(passMaxDir);
-          VFDstring(" in T-");
-          temp_vfd_position=24+passMaxDir.length();
-          ongoingPassMaxInfoPrint=false;
-          }
-
-        VFDsetpos(temp_vfd_position);
-        VFDstring(String((int)(passMaxEpoch-currentEpoch)));
-        VFDstring(" seconds ");
-
-       // delay(100); ///////////////////////////////////////////////////////////////////////////////////////////////////////////// <-DELAY
-
+            VFDstring(" M:");
+            VFDstring(passMagnitude);
         }
+        clock();
+        break;
 
-    else if((currentEpoch>passMaxEpoch) && passVisible)
-      {
-
-      if(ongoingPassEndInfoPrint)
-        {
-
+  case 3: //regular  pass
         VFDclear();
-        VFDstring("Visible pass end @");  //18
-        VFDstring(passEndDir);            //4-6
-        VFDstring(" in T-");              //6
-        temp_vfd_position=24+passEndDir.length();
-        ongoingPassEndInfoPrint=false;
-        }
+        PWM_ramp(true); //lights fade on
+        VFDstring("Non-visible pass in progress.");
+        clock();
+        break;
 
-      VFDsetpos(temp_vfd_position);
-      VFDstring(String((int)(passEndEpoch-currentEpoch))); //1-3
-      VFDstring(" seconds ");
+  case 4: //visible pass
+        VFDclear();
+        PWM_ramp(true); //lights fade on
 
-     // delay(100); ///////////////////////////////////////////////////////////////////////////////////////////////////////////// <-DELAY
-
-      }
-
-    else clock(); //if pass is not visible, but underway.
-  }
-
-
-  else if (currentEpoch>=passStartEpoch && passInProgress==false) //PASS START!
-  {
-    keepcalmandcarryon=false;
-    PWM_ramp(true); //lights fade on
-    VFDclear();
-
-
-
-    if (passVisible)
-      {
         VFDscrollMode(true);
 
         VFDstring("VISIBLE PASS STARTING!");
         delay(500);
 
-        VFDstring("  Magnitude: ");
+        VFDstring("      Magnitude: ");
         VFDstring(passMagnitude);
 
         delay(500);
 
-        //ADD INFO ABOUT PASS!
-
-        VFDstring(" Direction: ");
+        VFDstring("      Direction: ");
         VFDstring(passStartDir);
 
-        delay(1000);
+        delay(500);
 
-      }
-    else
-      {
-      VFDstring("Non-visible pass in progress.");
-      clock();
-      }
-
-    passInProgress=true;
-  }
-
-
-  else if ((currentEpoch>=(passStartEpoch-300)) && firstWarningGiven==false) //5 Minutes (or less) till next pass
-  {
-    if (passVisible)
-      {
-
-        VFDclear();
-
-        VFDscrollMode(true);
-
-        PWM_ramp(true); //lights on
-
-        VFDclear();
-        VFDstring("Visible pass in: ");
-        VFDstring(String((int)(passStartEpoch-currentEpoch)));
-        VFDstring(" seconds ");
+        VFDstring("      Duration: ");
+        VFDstring(String((int)(passEndEpoch-passStartEpoch)));
+        VFDstring(" seconds...");
 
         delay(1500);
 
-        VFDstring("  Magnitude: ");
-        VFDstring(passMagnitude);
-
-        delay(1500);
-
-        //ADD INFO ABOUT PASS!
-
-        VFDstring(" Start: ");
-        VFDstring(passStartDir);
-
-             delay(1500);
-
-
-        VFDstring(" Max: ");
-        VFDstring(passMaxDir);
-
-             delay(1500);
-
-
-        VFDstring(" End: ");
-        VFDstring(passEndDir);
-
-            delay(2500);
-
-        //oh! and blinkenlights!
-        PWM_ramp(false); //lights off
         VFDscrollMode(false);
+
+        //print info about upcoming pass max
         VFDclear();
-      }
-      firstWarningGiven=true;
-      print_text=true;
+        VFDstring("Visible pass max @");
+        VFDstring(passMaxDir);
+        VFDstring(" in T-");
+        temp_vfd_position=24+passMaxDir.length();
+        break;
+
+  case 5: //visible pass countdown to max
+        VFDsetpos(temp_vfd_position);
+        VFDstring(String((int)(passMaxEpoch-currentEpoch)));
+        VFDstring(" seconds ");
+        break;
+
+  case 6: //visible pass print end info
+        VFDclear();
+        VFDstring("Visible pass end @");  //18
+        VFDstring(passEndDir);            //4-6
+        VFDstring(" in T-");              //6
+        temp_vfd_position=24+passEndDir.length();
+        break;
+
+  case 7: //visible pass countdown to end
+        VFDsetpos(temp_vfd_position);
+        VFDstring(String((int)(passEndEpoch-currentEpoch))); //1-3
+        VFDstring(" seconds ");
+        break;
+
+  case 8: //pass ended
+        VFDclear();
+        VFDstring("End of pass.");
+        PWM_ramp(false); //lights fade off
+        VFDclear();
+        break;
   }
 
+state_update();
 
 }
+
 
 /*
                          tttt            iiii  lllllll
@@ -454,33 +355,77 @@ u:::::::::::::::uu    t::::::tttt:::::ti::::::il::::::ls:::::ssss::::::s ::::::
 void timekeeper(void)
 {
 
-          while(millis()<lastmillis+1000) {} //WAIT FOR ABOUT A SECOND
+    while(millis()<lastmillis+1000) {} //WAIT FOR ABOUT A SECOND
 
-          //if(millis()>lastmillis+1000) //a second (or more) has passed
-          //{
-            currentEpoch+=((millis()-lastmillis)/1000); //add  a second or more to the current epoch
-            lastmillis=millis();
-            timekeeper_standalone_seconds++;
-            ntp_ip_refresh_seconds++;
+    currentEpoch+=((millis()-lastmillis)/1000); //add  a second or more to the current epoch
+    lastmillis=millis();
+    timekeeper_standalone_seconds++;
+    ntp_ip_refresh_seconds++;
+    secs_to_next_pass=passStartEpoch-currentEpoch;
 
-            secs_to_next_pass=passStartEpoch-currentEpoch;
-          //}
+    if(timekeeper_standalone_seconds>=30)
+        {
+            sendNTPpacket(timeServer);
+            UDPwait(false);
+            handle_ntp();
+            currentEpoch++; // meh.. calibration...
+            timekeeper_standalone_seconds=0;
+        }
+    if(ntp_ip_refresh_seconds>3600)
+        {
+            ntp_ip_refresh_seconds=0;
+            lookup_ntp_ip(); //for every hour.
+        }
 
-          if(timekeeper_standalone_seconds>=30)
-          {
-          sendNTPpacket(timeServer);
-          UDPwait(false);
-          handle_ntp();
-          currentEpoch++; // meh.. calibration...
-          timekeeper_standalone_seconds=0;
-          }
+    hh_to_next_pass=(secs_to_next_pass  % 86400L) / 3600;
+    mm_to_next_pass=(secs_to_next_pass % 3600) / 60;
+    ss_to_next_pass=secs_to_next_pass % 60;
+}
 
-          if(ntp_ip_refresh_seconds<3600) lookup_ntp_ip(); //for every hour.
+void state_update()
+{
+    switch(state)
+    {
+        case 0:
+            state=1;
+            break;
+        case 1:
+            state=2;
+            break;
+        case 2:
+            if(currentEpoch>=passStartEpoch)
+                {
+                if(!passVisible) state=3;
+                else state=4;
+                }
+            break;
+        case 3:
+            if(currentEpoch>=passEndEpoch) state=8;
+            break;
+        case 4:
+            state = 5;
+            break;
+        case 5:
+            if(currentEpoch>=passMaxEpoch) state=6;
+            break;
+        case 6:
+            state=7;
+            break;
+        case 7:
+            if (currentEpoch>=passEndEpoch) state=8;
+            break;
 
-          hh_to_next_pass=(secs_to_next_pass  % 86400L) / 3600;
-          mm_to_next_pass=(secs_to_next_pass % 3600) / 60;
-          ss_to_next_pass=secs_to_next_pass % 60;
+        case 8:
+            state = 0;
+            break;
 
+        default:
+            VFDclear();
+            VFDstring("statemachine b0rked!");
+            errorclock();
+            break;
+
+    }
 }
 
 void lookup_ntp_ip(void)
@@ -488,16 +433,24 @@ void lookup_ntp_ip(void)
     ///////////////// LOOKUP NTP IP //////////////
     //EthernetDNS.setDNSServer(dnsServerIp);
     my_dns.begin(DNS_IP);
-    if(my_dns.getHostByName(NTP_hostName, timeServer) !=1) errorclock(); //if it returns something other than 1 we're in trouble.
+    if(my_dns.getHostByName(NTP_hostName, timeServer) !=1)
+    {
+        VFDclear();
+        VFDstring("NTP DNS lookup failed");
+        delay(1000);
+        errorclock(); //if it returns something other than 1 we're in trouble.
+    }
+
+
 }
 
 void(* resetFunc) (void) = 0; //declare reset function @ address 0
 
 void errorclock(void)
 {
-  PWM_ramp(false); //lights off
+  //PWM_ramp(false); //lights off
+  digitalWrite(PWM_PIN,true);
   unsigned int error_seconds=0;
-  delay(3000);
   VFDclear();
   VFDchar(1,1); //set VFD position.
   VFDchar(0,'!'); //print error indicator
@@ -672,9 +625,9 @@ IIIIIIIIII SSSSSSSSSSSSSSS    SSSSSSSSSSSSSSS              TTTTTTTTTTT      XXXX
 
 unsigned long sendISSpacket(IPAddress& address)
 {
-  // set all bytes in the buffer to 0
+  // set 4 bytes in the buffer to 0
 
-  memset(packetBuffer, 0, NTP_PACKET_SIZE);
+  memset(packetBuffer, 0, 4);
 
   packetBuffer[0] = 'i';
   packetBuffer[1] = 's';
@@ -704,6 +657,8 @@ I::::::::IS::::::SSSSSS:::::SS::::::SSSSSS:::::S     R::::::R     R:::::RX:::::X
 I::::::::IS:::::::::::::::SS S:::::::::::::::SS      R::::::R     R:::::RX:::::X       X:::::X
 IIIIIIIIII SSSSSSSSSSSSSSS    SSSSSSSSSSSSSSS        RRRRRRRR     RRRRRRRXXXXXXX       XXXXXXX
 */
+
+// V \ 1 \ -2.8 \ 1406937446 \ SSE-37 \ 1406937446 \ SSE-37 \ 1406851222 \ ESE-10
 
 void handle_ISS_udp()
 {
@@ -772,12 +727,12 @@ else
     //START DIR:
     passStartDir=String((char *)startp);
 
-    /* //PRINT
+    //PRINT
     VFDstring("Next pass start direction: ");
     VFDstring(passStartDir);
-    delay(300);
+    delay(1000);
     VFDclear();
-    */
+
 
     while(*startp) startp++; //jump to the next string in the UDP packet
     startp++;
@@ -792,12 +747,12 @@ else
     //MAX DIR:
     passMaxDir=String((char *)startp);
 
-    /* //PRINT:
+    //PRINT:
     VFDstring("Next pass MAX direction: ");
     VFDstring(passMaxDir);
-    delay(300);
+    delay(1000);
     VFDclear();
-    */
+
 
     while(*startp) startp++; //jump to the next string in the UDP packet
     startp++;
@@ -812,19 +767,23 @@ else
 
     //END DIR:
     passEndDir=String((char *)startp);
-    /* //PRINT:
+    //PRINT:
     VFDstring("Next pass END direction: ");
     VFDstring(passEndDir);
-    delay(300);
+    delay(1000);
     VFDclear();
-    */
+
 
     //SECS TO PASS:
     secs_to_next_pass=passStartEpoch-currentEpoch;
     VFDstring("SECONDS TO NEXT PASS: ");
     VFDstring(String(secs_to_next_pass));
+    delay(2500);
+    VFDclear();
 
-
+    VFDstring("Duration: ");
+    VFDstring(String((int)(passEndEpoch-passStartEpoch)));
+    VFDstring(" seconds...");
     delay(2500);
     VFDclear();
 
@@ -832,17 +791,17 @@ else
     VFDstring("  SECONDS TIL PASS MAX: ");
     VFDstring(String((int)(passMaxEpoch-currentEpoch)));
 
-     delay(300);
+    delay(300);
     VFDclear();
 
     VFDstring("  SECONDS TIL PASS END: ");
     VFDstring(String((int)(passEndEpoch-currentEpoch)));
 
 
-     delay(300);
+    delay(300);
     VFDclear();
     */
-  memset(packetBuffer, 0, NTP_PACKET_SIZE); //reset buffer
+  //memset(packetBuffer, 0, NTP_PACKET_SIZE); //reset buffer
 }
 
 /*
