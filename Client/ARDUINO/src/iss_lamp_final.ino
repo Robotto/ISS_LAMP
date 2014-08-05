@@ -4,24 +4,17 @@ ISS LAMP
 This sketch gets ISS data from a python script on robottobox
 using an Arduino Wiznet Ethernet shield.
 
-and ALSO NTP time from the danish NTP pool.
-
-and now a check to see if daylight savings time is active
-
-Also: VFD!
-And Also: PWM!
-and now: DNS LOOKUP for the NTP!
+and ALSO NTP time from the danish NTP pool, with dns lookup.
 
 Todo:
 VFD to class .. or not.. 800 lines of code isn't that bad.. is it?
 
-Before shipping:
--Internalize heavens-above html scrape? .. probably not
 */
 
 #include <SPI.h>
 #include <Ethernet.h>
 #include <Dns.h>
+#include <VFD.h>
 
 
 byte mac[] = {  0x90, 0xA2, 0xDA, 0x0D, 0x34, 0xFC }; //MAC address of the Ethernet shield
@@ -70,23 +63,15 @@ String passStartDir;
 String passMaxDir;
 String passEndDir;
 
-//Statemachine booleans:
-unsigned int state=1; //start at 1 since first pass-get (state 0) is done in setup
-
-
+//Statemachine state indicator:
+unsigned int state=0;
 
 //hardware setup:
 int PWM_PIN=9;
 
-//VFD IO STUFF:
-int T0 = A0;
-int CS = A1;
-int RD = A2;
-int RESET = A3;
-int A_0 = A4;
-int WR = A5;
-byte customcharposition = 0xa0;
-unsigned char VFD_data_pins[8];
+//vfd constructor:
+VFD VFD(A0,A1,A2,A3,A4,A5,1,0,7,6,5,4,3,2);
+
 int temp_vfd_position = 0;
 
 
@@ -120,32 +105,33 @@ S:::::::::::::::SS   ee:::::::::::::e          tt:::::::::::tt  uu::::::::uu:::u
 
 void setup() {
 
-    VFDsetup();
 
-    VFDclear();
+
+    VFD.begin();
 
     PWM_ramp(true);
 
+    VFD.sendString("Power OK.");
 
     // start the Ethernet connection:
     if (Ethernet.begin(mac) == 0)
     {
-        VFDstring("Failed to configure Ethernet using DHCP!");
+        VFD.sendString("Failed to configure Ethernet using DHCP!");
         PWM_ramp(false);
         while(1); //dead end.
     }
 
     else
     {
-        VFDclear();
-        VFDstring("Ethernet up! - IP: ");
+        VFD.clear();
+        VFD.sendString("Ethernet up! - IP: ");
 
         String localIpString="  "; //really weird.. string needs to be initialized with something in it to work properly...
         localIpString=String(Ethernet.localIP()[0]); //first byte
 
         //formatting for print:
         for(byte ip=1;ip<4;ip++){localIpString+='.'; localIpString+=String(Ethernet.localIP()[ip]);} //last 3 bytes
-        VFDstring(localIpString);
+        VFD.sendString(localIpString);
         delay(1500);
     }
 
@@ -153,39 +139,31 @@ void setup() {
 
     delay(1000); //give the ethernet shield some time.
 
-    VFDclear();
+    VFD.clear();
     lookup_ntp_ip();
-    VFDstring("DNS resolve: dk.pool.ntp.org");
+    VFD.sendString("DNS resolve: dk.pool.ntp.org");
 
     delay(1000);
 
     //transform IP byte array to string so that the debug window can tell user what ip is being used:
     static char ipstringbuf[16];
     sprintf(ipstringbuf, "%d.%d.%d.%d\0", timeServer[0], timeServer[1], timeServer[2], timeServer[3]);
-    VFDclear();
-    VFDstring("NTP IP resolved: ");
-    VFDstring(ipstringbuf);
+    VFD.clear();
+    VFD.sendString("NTP IP resolved: ");
+    VFD.sendString(ipstringbuf);
 
     delay(1000);
 
     ///////////////// QUERY NTP //////////////
-    VFDstring("   UDP TX -> NTP");
+    VFD.sendString("   UDP TX -> NTP");
     sendNTPpacket(timeServer);
     UDPwait(false); //false = NTP
-    VFDstring("  NTP RX!!");
+    VFD.sendString("  NTP RX!!");
     handle_ntp();
 
-
-    //////////////// ISS ///////////////
     delay(500);
-
-    VFDclear();
-    sendISSpacket(robottobox); //ask robottobox for iss data
-    VFDstring("ISS TX -> Robottobox");
-    UDPwait(true);
-    VFDstring("  ISS RX!!");
-    handle_ISS_udp();
-    VFDchar(0,0x16); //cursor off.
+    VFD.cursorMode(VFD_CURSOR_OFF);
+    VFD.clear();
 
     //PWM_ramp(false); //lights ramp down
     digitalWrite(PWM_PIN,true);
@@ -227,104 +205,107 @@ switch(state)
   {
   case 0:
         sendISSpacket(robottobox); //ask robottobox for new iss data
+        VFD.sendString("ISS TX -> Robottobox");
         UDPwait(true);
+        delay(500);
+        VFD.sendString("  ISS RX!!");
         handle_ISS_udp();
         //state=1;
         break;
 
   case 1:
-        VFDclear();
-        if (passVisible) VFDstring("Visible pass T-LOADING        LOADING"); //15
-        else VFDstring("Regular pass    T-LOADING        LOADING");
+        VFD.clear();
+        if (passVisible) VFD.sendString("Visible pass T-LOADING          LOADING"); //15
+        else VFD.sendString("Regular pass    T-LOADING        LOADING");
         //state=2;
         break;
 
   case 2:       //probably could be called default state..
-        if(passVisible) VFDsetpos(15);
-        else VFDsetpos(18);
-        if(hh_to_next_pass<10) VFDchar(0,'0');
-        VFDstring(String(hh_to_next_pass));
-        VFDchar(0,':');
-        if(mm_to_next_pass<10) VFDchar(0,'0');
-        VFDstring(String(mm_to_next_pass));
-        VFDchar(0,':');
-        if(ss_to_next_pass<10) VFDchar(0,'0');
-        VFDstring(String(ss_to_next_pass));
+        if(passVisible) VFD.setPos(15);
+        else VFD.setPos(18);
+        if(hh_to_next_pass<10) VFD.sendChar('0');
+        VFD.sendString(String(hh_to_next_pass));
+        VFD.sendChar(':');
+        if(mm_to_next_pass<10) VFD.sendChar('0');
+        VFD.sendString(String(mm_to_next_pass));
+        VFD.sendChar(':');
+        if(ss_to_next_pass<10) VFD.sendChar('0');
+        VFD.sendString(String(ss_to_next_pass));
         if (passVisible)
         {
-            VFDstring(" M:");
-            VFDstring(passMagnitude);
+            VFD.sendString(" M:");
+            VFD.sendString(passMagnitude);
         }
         clock();
         break;
 
   case 3: //regular  pass
-        VFDclear();
+        VFD.clear();
         PWM_ramp(true); //lights fade on
-        VFDstring("Non-visible pass in progress.");
+        VFD.sendString("Non-visible pass in progress.");
         clock();
         break;
 
   case 4: //visible pass
-        VFDclear();
+        VFD.clear();
         PWM_ramp(true); //lights fade on
 
-        VFDscrollMode(true);
+        VFD.scrollMode(true);
 
-        VFDstring("VISIBLE PASS STARTING!");
+        VFD.sendString("VISIBLE PASS STARTING!");
         delay(500);
 
-        VFDstring("      Magnitude: ");
-        VFDstring(passMagnitude);
-
-        delay(500);
-
-        VFDstring("      Direction: ");
-        VFDstring(passStartDir);
+        VFD.sendString("      Magnitude: ");
+        VFD.sendString(passMagnitude);
 
         delay(500);
 
-        VFDstring("      Duration: ");
-        VFDstring(String((int)(passEndEpoch-passStartEpoch)));
-        VFDstring(" seconds...");
+        VFD.sendString("      Direction: ");
+        VFD.sendString(passStartDir);
+
+        delay(500);
+
+        VFD.sendString("      Duration: ");
+        VFD.sendString(String((int)(passEndEpoch-passStartEpoch)));
+        VFD.sendString(" seconds...");
 
         delay(1500);
 
-        VFDscrollMode(false);
+        VFD.scrollMode(false);
 
         //print info about upcoming pass max
-        VFDclear();
-        VFDstring("Visible pass max @");
-        VFDstring(passMaxDir);
-        VFDstring(" in T-");
+        VFD.clear();
+        VFD.sendString("Visible pass max @");
+        VFD.sendString(passMaxDir);
+        VFD.sendString(" in T-");
         temp_vfd_position=24+passMaxDir.length();
         break;
 
   case 5: //visible pass countdown to max
-        VFDsetpos(temp_vfd_position);
-        VFDstring(String((int)(passMaxEpoch-currentEpoch)));
-        VFDstring(" seconds ");
+        VFD.setPos(temp_vfd_position);
+        VFD.sendString(String((int)(passMaxEpoch-currentEpoch)));
+        VFD.sendString(" seconds ");
         break;
 
   case 6: //visible pass print end info
-        VFDclear();
-        VFDstring("Visible pass end @");  //18
-        VFDstring(passEndDir);            //4-6
-        VFDstring(" in T-");              //6
+        VFD.clear();
+        VFD.sendString("Visible pass end @");  //18
+        VFD.sendString(passEndDir);            //4-6
+        VFD.sendString(" in T-");              //6
         temp_vfd_position=24+passEndDir.length();
         break;
 
   case 7: //visible pass countdown to end
-        VFDsetpos(temp_vfd_position);
-        VFDstring(String((int)(passEndEpoch-currentEpoch))); //1-3
-        VFDstring(" seconds ");
+        VFD.setPos(temp_vfd_position);
+        VFD.sendString(String((int)(passEndEpoch-currentEpoch))); //1-3
+        VFD.sendString(" seconds ");
         break;
 
   case 8: //pass ended
-        VFDclear();
-        VFDstring("End of pass.");
+        VFD.clear();
+        VFD.sendString("End of pass.");
         PWM_ramp(false); //lights fade off
-        VFDclear();
+        VFD.clear();
         break;
   }
 
@@ -420,8 +401,8 @@ void state_update()
             break;
 
         default:
-            VFDclear();
-            VFDstring("statemachine b0rked!");
+            VFD.clear();
+            VFD.sendString("statemachine b0rked!");
             errorclock();
             break;
 
@@ -435,8 +416,8 @@ void lookup_ntp_ip(void)
     my_dns.begin(DNS_IP);
     if(my_dns.getHostByName(NTP_hostName, timeServer) !=1)
     {
-        VFDclear();
-        VFDstring("NTP DNS lookup failed");
+        VFD.clear();
+        VFD.sendString("NTP DNS lookup failed");
         delay(1000);
         errorclock(); //if it returns something other than 1 we're in trouble.
     }
@@ -451,11 +432,11 @@ void errorclock(void)
   //PWM_ramp(false); //lights off
   digitalWrite(PWM_PIN,true);
   unsigned int error_seconds=0;
-  VFDclear();
-  VFDchar(1,1); //set VFD position.
-  VFDchar(0,'!'); //print error indicator
-  //VFDchar(0,0x16); //cursor off
-  VFDcursor(false);
+  VFD.clear();
+  VFD.setPos(1); //set VFD position.
+  VFD.sendChar('!'); //print error indicator
+  //VFD.sendChar(0x16); //cursor off
+  VFD.cursorMode(VFD_CURSOR_OFF);
 
   while(1)
   {
@@ -530,7 +511,7 @@ void clock()
                               //TODO: should check if time has changed befgore printing!
 
   //VFDchar(1,30); //set VFD position.
-  VFDsetpos(32);
+  VFD.setPos(32);
 
    // print the hour, minute and second:
 
@@ -541,21 +522,21 @@ void clock()
 
     if (hours>23) hours=hours-24; //offset check since GMT and DST offsets are added after modulo
 
-    if(hours<10) VFDchar(0,'0'); //add leading '0' to hours lower than 10
+    if(hours<10) VFD.sendChar('0'); //add leading '0' to hours lower than 10
 
-    VFDstring(String(hours)); // print the hour
+    VFD.sendString(String(hours)); // print the hour
 
-    VFDchar(0,':');
-
-
-    if ( minutes < 10 ) VFDchar(0,'0'); //add leading '0' to minutes lower than 10
-    VFDstring(String(minutes)); // print the minute (3600 equals secs per minute)
-
-    VFDchar(0,':');
+    VFD.sendChar(':');
 
 
-    if ( seconds < 10 ) VFDchar(0,'0'); //add leading '0' to seconds lower than 10
-    VFDstring(String(seconds)); // print the second
+    if ( minutes < 10 ) VFD.sendChar('0'); //add leading '0' to minutes lower than 10
+    VFD.sendString(String(minutes)); // print the minute (3600 equals secs per minute)
+
+    VFD.sendChar(':');
+
+
+    if ( seconds < 10 ) VFD.sendChar('0'); //add leading '0' to seconds lower than 10
+    VFD.sendString(String(seconds)); // print the second
 }
 
 
@@ -590,12 +571,12 @@ while (!Udp.parsePacket())
       else sendNTPpacket(timeServer);
       UDPretries++;
       UDPretryDelay=0;
-//      VFDchar(0,'.');
+//      VFD.sendChar('.');
     }
   if(UDPretries==10)
     {
-      VFDclear();
-      VFDstring("No UDP RX for 50+sec, giving up.");
+      VFD.clear();
+      VFD.sendString("No UDP RX for 50+sec, giving up.");
       errorclock();
     }
   }
@@ -666,10 +647,10 @@ void handle_ISS_udp()
     memset(packetBuffer, 0, NTP_PACKET_SIZE); //reset packet buffer
     int read_bytes=Udp.read(packetBuffer,NTP_PACKET_SIZE);  // read the packet into the buffer
 //    Udp.read(packetBuffer,NTP_PACKET_SIZE);  // read the packet into the buffer
-//    VFDstring(" Read bytes: ");
-//    VFDstring(String(read_bytes));
+//    VFD.sendString(" Read bytes: ");
+//    VFD.sendString(String(read_bytes));
 //    delay(500);
-//    VFDclear();
+//    VFD.clear();
 
 
 if (packetBuffer[0]=='V') passVisible=true; //stringcount=7; //VISIBLE PASS
@@ -677,7 +658,7 @@ else if (packetBuffer[0]=='R') passVisible=false; //stringcount=6; //REGULAR PAS
 
 else
   {
-  VFDstring("Bad data from robottobox, aborting :(");
+  VFD.sendString("Bad data from robottobox, aborting :(");
   errorclock();
   }
 
@@ -695,10 +676,10 @@ char Epoch_TEMP[12]; //holds strings so they can be converted to a number
 
 if (passVisible)
   {
-    VFDclear();
-    VFDstring("NEXT PASS IS VISIBLE!");
+    VFD.clear();
+    VFD.sendString("NEXT PASS IS VISIBLE!");
     delay(1500);
-    VFDclear();
+    VFD.clear();
 
    //MAGNITUDE
    passMagnitude=String((char *)startp);
@@ -708,10 +689,10 @@ if (passVisible)
   }
 else
   {
-    VFDclear();
-    VFDstring("Next pass not visible. ");
+    VFD.clear();
+    VFD.sendString("Next pass not visible. ");
     delay(1500);
-    VFDclear();
+    VFD.clear();
   }
     //START TIME:
 
@@ -728,10 +709,10 @@ else
     passStartDir=String((char *)startp);
 
     //PRINT
-    VFDstring("Next pass start direction: ");
-    VFDstring(passStartDir);
+    VFD.sendString("Next pass start direction: ");
+    VFD.sendString(passStartDir);
     delay(1000);
-    VFDclear();
+    VFD.clear();
 
 
     while(*startp) startp++; //jump to the next string in the UDP packet
@@ -748,10 +729,10 @@ else
     passMaxDir=String((char *)startp);
 
     //PRINT:
-    VFDstring("Next pass MAX direction: ");
-    VFDstring(passMaxDir);
+    VFD.sendString("Next pass MAX direction: ");
+    VFD.sendString(passMaxDir);
     delay(1000);
-    VFDclear();
+    VFD.clear();
 
 
     while(*startp) startp++; //jump to the next string in the UDP packet
@@ -768,38 +749,38 @@ else
     //END DIR:
     passEndDir=String((char *)startp);
     //PRINT:
-    VFDstring("Next pass END direction: ");
-    VFDstring(passEndDir);
+    VFD.sendString("Next pass END direction: ");
+    VFD.sendString(passEndDir);
     delay(1000);
-    VFDclear();
+    VFD.clear();
 
 
     //SECS TO PASS:
     secs_to_next_pass=passStartEpoch-currentEpoch;
-    VFDstring("SECONDS TO NEXT PASS: ");
-    VFDstring(String(secs_to_next_pass));
+    VFD.sendString("SECONDS TO NEXT PASS: ");
+    VFD.sendString(String(secs_to_next_pass));
     delay(2500);
-    VFDclear();
+    VFD.clear();
 
-    VFDstring("Duration: ");
-    VFDstring(String((int)(passEndEpoch-passStartEpoch)));
-    VFDstring(" seconds...");
+    VFD.sendString("Duration: ");
+    VFD.sendString(String((int)(passEndEpoch-passStartEpoch)));
+    VFD.sendString(" seconds...");
     delay(2500);
-    VFDclear();
+    VFD.clear();
 
     /*
-    VFDstring("  SECONDS TIL PASS MAX: ");
-    VFDstring(String((int)(passMaxEpoch-currentEpoch)));
+    VFD.sendString("  SECONDS TIL PASS MAX: ");
+    VFD.sendString(String((int)(passMaxEpoch-currentEpoch)));
 
     delay(300);
-    VFDclear();
+    VFD.clear();
 
-    VFDstring("  SECONDS TIL PASS END: ");
-    VFDstring(String((int)(passEndEpoch-currentEpoch)));
+    VFD.sendString("  SECONDS TIL PASS END: ");
+    VFD.sendString(String((int)(passEndEpoch-currentEpoch)));
 
 
     delay(300);
-    VFDclear();
+    VFD.clear();
     */
   //memset(packetBuffer, 0, NTP_PACKET_SIZE); //reset buffer
 }
@@ -883,7 +864,7 @@ void handle_ntp()
     unsigned long secsSince1900 = highWord << 16 | lowWord;
 
     // now convert NTP time into everyday time:
-    // VFDstring("Current unix time = ");
+    // VFD.sendString("Current unix time = ");
 
 	// Unix time starts on Jan 1 1970. In seconds, that's 2208988800:
     const unsigned long seventyYears = 2208988800UL;
@@ -894,207 +875,5 @@ void handle_ntp()
 
     lastmillis = millis();
     //Serial.println(currentEpoch);
-    //VFDstring(String(currentEpoch));
+    //VFD.sendString(String(currentEpoch));
 }
-
-
-/*
-VVVVVVVV           VVVVVVVVFFFFFFFFFFFFFFFFFFFFFFDDDDDDDDDDDDD
-V::::::V           V::::::VF::::::::::::::::::::FD::::::::::::DDD
-V::::::V           V::::::VF::::::::::::::::::::FD:::::::::::::::DD
-V::::::V           V::::::VFF::::::FFFFFFFFF::::FDDD:::::DDDDD:::::D
- V:::::V           V:::::V   F:::::F       FFFFFF  D:::::D    D:::::D
-  V:::::V         V:::::V    F:::::F               D:::::D     D:::::D ::::::
-   V:::::V       V:::::V     F::::::FFFFFFFFFF     D:::::D     D:::::D ::::::
-    V:::::V     V:::::V      F:::::::::::::::F     D:::::D     D:::::D ::::::
-     V:::::V   V:::::V       F:::::::::::::::F     D:::::D     D:::::D
-      V:::::V V:::::V        F::::::FFFFFFFFFF     D:::::D     D:::::D
-       V:::::V:::::V         F:::::F               D:::::D     D:::::D
-        V:::::::::V          F:::::F               D:::::D    D:::::D  ::::::
-         V:::::::V         FF:::::::FF           DDD:::::DDDDD:::::D   ::::::
-          V:::::V          F::::::::FF           D:::::::::::::::DD    ::::::
-           V:::V           F::::::::FF           D::::::::::::DDD
-            VVV            FFFFFFFFFFF           DDDDDDDDDDDDD
-*/
-
-void VFDsetup()
-{
-VFD_data_pins[0] = 1; //D7 - used to be 9
-VFD_data_pins[1] = 0; //D6 - used to be 8
-VFD_data_pins[2] = 7; //D5
-VFD_data_pins[3] = 6; //D4
-VFD_data_pins[4] = 5; //D3
-VFD_data_pins[5] = 4; //D2
-VFD_data_pins[6] = 3; //D1
-VFD_data_pins[7] = 2; //D0
-
-
-//DATA PORT:
-
-unsigned char pin;
-for (pin=0; pin < 8; pin++)
-{
-pinMode (VFD_data_pins[pin], OUTPUT);
-digitalWrite (VFD_data_pins[pin], LOW);
-}
-
-//CONTROL PINS
-pinMode(WR, OUTPUT); //!WR
-pinMode(A_0, OUTPUT); //A0
-pinMode(RESET, OUTPUT); //RESET
-pinMode(RD, OUTPUT); //!RD
-pinMode(CS, OUTPUT); //!CS
-pinMode(T0, OUTPUT); //T0
-
-digitalWrite(WR, LOW);
-digitalWrite(A_0, LOW);
-digitalWrite(RESET, LOW);
-digitalWrite(RD, HIGH);
-digitalWrite(CS, LOW);
-digitalWrite(T0, HIGH);
-digitalWrite(WR,HIGH);
-
-VFDreset();
-
-VFDcursor(true);
-
-VFDscrollMode(true);
-}
-
-void VFDreset()
-{
-  digitalWrite(RESET, HIGH);
-  delay(100);
-  digitalWrite(RESET, LOW);
-  delay(500);
-}
-
-void VFDclear()
-{
-  VFDchar(0,'\r');
-  VFDchar(0,'\n');
-}
-
-void VFDscrollMode(boolean onoff)
-{
- if(onoff)  VFDchar(0,0x13); else VFDchar(0,0x11);
-}
-
-void VFDcursor(boolean onoff)
-{
-  if(onoff) VFDchar(0,0x17); //flashing carriage
-  else VFDchar(0,0x16); //cursor off
-}
-
-void VFDsetpos(byte position) //0-40 decimal
-{
- VFDchar(1,position);
-}
-/*
-void VFDsmileyMake()
-{
-  VFDchar(0,0x1b); //ESC
-  VFDchar(0,customcharposition);
-  VFDchar(0,0b00011000);
-  VFDchar(0,0b00010001);
-  VFDchar(0,0b00010000);
-  VFDchar(0,0b10000000);
-  VFDchar(0,0b00111000);
-//  VFDchar(0,customcharposition);  //print
-}
-*/
-
-void VFDchar(int isCommand, unsigned char databyte)
-{
-  if(isCommand==1) digitalWrite(A_0,HIGH); else digitalWrite(A_0,LOW);
-  digitalWrite(WR,LOW);
-  delay(1);
-  VFDsetDataport(databyte);
-  delay(1);
-  digitalWrite(WR,HIGH);
-  delay(1);
-}
-/*
-void VFDflashyString(String inputstring)
-{
- VFDchar(0,0x06); //start of flashy string
- VFDstring(inputstring);
- VFDchar(0,0x07); //end of flashy string
-}
-*/
-
-void VFDstring(String inputstring)
-{
-  int i=0;
-  while (i<=inputstring.length())
-  {
-  byte checkbyte=inputstring[i+1]; //needs to be a byte to see non ascii unsigned stuff.
-                                   //also skip the strange non ascii identifyer byte.
-  switch (checkbyte)
-    {
-    case 166: //æ
-      VFDchar(0,0x1c);
-      VFDchar(0,0x7b);
-      i++;
-    break;
-
-    case 184: //ø
-      VFDchar(0,0x1c);
-      VFDchar(0,0x7c);
-      i++;
-    break;
-
-    case 165: //å
-      VFDchar(0,0x1c);
-      VFDchar(0,0x7d);
-      i++;
-    break;
-
-    case 134: //Æ
-      VFDchar(0,0x1c);
-      VFDchar(0,0x5b);
-      i++;
-    break;
-
-    case 152: //Ø
-      VFDchar(0,0x1c);
-      VFDchar(0,0x5c);
-      i++;
-    break;
-
-    case 133: //Å
-      VFDchar(0,0x1c);
-      VFDchar(0,0x5d);
-      i++;
-    break;
-
-    default:
-      VFDchar(0,inputstring[i]);
-    break;
-    }
-    i++;
-
-  }
-}
-
-void VFDsetDataport(unsigned char byte_of_doom)
-{
-    for (unsigned char i = 0; i < 8; i++)
-    {
-     digitalWrite(VFD_data_pins[i], (byte_of_doom >> i) & 0x01);
-    }
-}
-/*
-void VFDdancingSmileyForever()
-{
-    VFDcursor(false);
-    VFDsmileyMake();
-
-    while(1)
-    {
-    for(int i=0;i<39;i++) { VFDchar(1,i); VFDchar(0,customcharposition); VFDchar(0,0x08); VFDchar(0,' ');}
-    for(int i=41;i!=0;i--) { VFDchar(1,i); VFDchar(0,customcharposition); VFDchar(0,0x08); VFDchar(0,' ');}
-    }
-
-}
-*/
