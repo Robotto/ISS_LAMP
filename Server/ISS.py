@@ -6,24 +6,6 @@
 
 
 # -*- coding: UTF-8 -*-
-#																																								 /------------------------------\
-#																																									 |															|
-#					Get page -> pull data -> check validity -- valid: -> save it -> WAIT FOR REQUEST-> respond to request ->/
-#(check for quarantine)									|																				|
-#																				|																				|
-#																				bad:																		 while <-------------------------<^<-----------\
-#																				|																				|																^						 |
-#																				quarantine for 24 hrs										check timestamp of next pass --> in_future		 |
-#																				|																									 |																	 |
-#																				|																									 |																	 |
-#																				restart																						 in_past														 |
-#																																														|																	 |
-#																																														|																	 /
-#																																														parse next pass data -> good ---> --
-#																																																				|
-#																																																				|
-#																																																				index err: out of future data --> restart
-#
 
 import mechanize
 import GeoIP
