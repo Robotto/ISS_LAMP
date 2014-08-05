@@ -243,10 +243,14 @@ switch(state)
         VFD.clear();
         PWM_ramp(true); //lights fade on
         VFD.sendString("Non-visible pass in progress.");
+        //MAYBE ADD COUNTDOWN?
+        break;
+
+  case 4:
         clock();
         break;
 
-  case 4: //visible pass
+  case 5: //visible pass
         VFD.clear();
         PWM_ramp(true); //lights fade on
 
@@ -281,13 +285,13 @@ switch(state)
         temp_vfd_position=24+passMaxDir.length();
         break;
 
-  case 5: //visible pass countdown to max
+  case 6: //visible pass countdown to max
         VFD.setPos(temp_vfd_position);
         VFD.sendString(String((int)(passMaxEpoch-currentEpoch)));
         VFD.sendString(" seconds ");
         break;
 
-  case 6: //visible pass print end info
+  case 7: //visible pass print end info
         VFD.clear();
         VFD.sendString("Visible pass end @");  //18
         VFD.sendString(passEndDir);            //4-6
@@ -295,17 +299,18 @@ switch(state)
         temp_vfd_position=24+passEndDir.length();
         break;
 
-  case 7: //visible pass countdown to end
+  case 8: //visible pass countdown to end
         VFD.setPos(temp_vfd_position);
         VFD.sendString(String((int)(passEndEpoch-currentEpoch))); //1-3
         VFD.sendString(" seconds ");
         break;
 
-  case 8: //pass ended
+  case 9: //pass ended
         VFD.clear();
         VFD.sendString("End of pass.");
         PWM_ramp(false); //lights fade off
         VFD.clear();
+        delay(1000);
         break;
   }
 
@@ -381,22 +386,25 @@ void state_update()
                 }
             break;
         case 3:
-            if(currentEpoch>=passEndEpoch) state=8;
+            state=4;
             break;
         case 4:
-            state = 5;
+            if(currentEpoch>=passEndEpoch) state=8;
             break;
         case 5:
-            if(currentEpoch>=passMaxEpoch) state=6;
+            state = 6;
             break;
         case 6:
-            state=7;
+            if(currentEpoch>=passMaxEpoch) state=7;
             break;
         case 7:
-            if (currentEpoch>=passEndEpoch) state=8;
+            state=8;
+            break;
+        case 8:
+            if (currentEpoch>=passEndEpoch) state=9;
             break;
 
-        case 8:
+        case 9:
             state = 0;
             break;
 
