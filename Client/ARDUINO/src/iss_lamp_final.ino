@@ -106,12 +106,12 @@ S:::::::::::::::SS   ee:::::::::::::e          tt:::::::::::tt  uu::::::::uu:::u
 void setup() {
 
 
-
     VFD.begin();
+
+    VFD.sendString("Power OK.");
 
     PWM_ramp(true);
 
-    VFD.sendString("Power OK.");
 
     // start the Ethernet connection:
     if (Ethernet.begin(mac) == 0)
@@ -136,8 +136,9 @@ void setup() {
     }
 
     Udp.begin(localPort);
-
     delay(1000); //give the ethernet shield some time.
+
+    my_dns.begin(DNS_IP);
 
     VFD.clear();
     lookup_ntp_ip();
@@ -372,39 +373,47 @@ void state_update()
 {
     switch(state)
     {
-        case 0:
+        case 0: //get new pass
             state=1;
             break;
-        case 1:
+
+        case 1: //print T-
             state=2;
             break;
-        case 2:
+
+        case 2: //countdown and clock
             if(currentEpoch>=passStartEpoch)
                 {
                 if(!passVisible) state=3;
-                else state=4;
+                else state=5;
                 }
             break;
-        case 3:
+
+        case 3: //non visible pass start
             state=4;
             break;
-        case 4:
+
+        case 4: //non visible pass in progress
             if(currentEpoch>=passEndEpoch) state=8;
             break;
-        case 5:
+
+        case 5: //Visible pass start
             state = 6;
             break;
-        case 6:
+
+        case 6: //Visible pass in progress before max
             if(currentEpoch>=passMaxEpoch) state=7;
             break;
-        case 7:
+
+        case 7: //Visible pass at max (print end info)
             state=8;
             break;
-        case 8:
+
+        case 8: //Visible pass in progress intill end
             if (currentEpoch>=passEndEpoch) state=9;
             break;
 
-        case 9:
+        case 9: //End of pass
             state = 0;
             break;
 
@@ -419,9 +428,6 @@ void state_update()
 
 void lookup_ntp_ip(void)
 {
-    ///////////////// LOOKUP NTP IP //////////////
-    //EthernetDNS.setDNSServer(dnsServerIp);
-    my_dns.begin(DNS_IP);
     if(my_dns.getHostByName(NTP_hostName, timeServer) !=1)
     {
         VFD.clear();
