@@ -28,7 +28,7 @@ while True:
         remoteIP=IP(addr[0]).strNormal() #convert address of packet origin to string
         #print data.strip(),addr
 	print 'RX: %s @ %s from %s' % (data, ctime(), remoteIP)
-        if (data.strip() == 'respond'):
+        if (data.strip() == 'iss?'):
 		currenttime = int(time())
 		#start in 30 seconds
 		tstart = currenttime + 30
