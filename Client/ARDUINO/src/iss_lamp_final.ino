@@ -11,7 +11,7 @@ VFD to class .. or not.. 800 lines of code isn't that bad.. is it?
 
 */
 
-#define VFD_SIZE 40
+#define DISPLAY_SIZE 40
 
 #include <SPI.h>
 #include <Ethernet.h>
@@ -42,7 +42,7 @@ int UDPretries = 0;
 
 //Timekeeper stuff:
 boolean DST = false; //Daylight savings? (summertime)
-int GMT_plus = 1; //timezone offset from GMT
+int GMT_plus = 1; //timezone offset from GMT - it should be possible to get the GMT offset from the server since it does geolocation anyways... hmm... nah.
 int timekeeper_standalone_seconds=0; //how long since last sync with ntp server
 int ntp_ip_refresh_seconds=0; //how long since last refresh of ntp server ip
 
@@ -76,6 +76,7 @@ int PWM_PIN=9;
 VFD VFD(A0,A1,A2,A3,A4,A5,1,0,7,6,5,4,3,2);
 
 int temp_vfd_position = 0;
+String displaybuffer="  ";
 
 
 
@@ -202,10 +203,6 @@ LLLLLLLLLLLLLLLLLLLLLLLL   ooooooooooo      ooooooooooo    p::::::pppppppp
 void loop()
 {
 
-int timetomax=0;
-int timetoend=0;
-String framebuffer="  ";
-
 timekeeper();
 
 
@@ -231,18 +228,18 @@ switch(state)
   case 2:       //probably could be called default state..
         if(passVisible) VFD.setPos(15);
         else VFD.setPos(18);
-        framebuffer ="";
-        if(hh_to_next_pass<10) framebuffer+="0";
-        framebuffer+=String(hh_to_next_pass);
-        framebuffer+=":";
-        if(mm_to_next_pass<10) framebuffer+="0";
-        framebuffer+=String(mm_to_next_pass);
-        framebuffer+=":";
-        if(ss_to_next_pass<10) framebuffer+="0";
-        framebuffer+=String(ss_to_next_pass);
-        if (passVisible) framebuffer+=" M:"+passMagnitude;
+        displaybuffer ="";
+        if(hh_to_next_pass<10) displaybuffer+="0";
+        displaybuffer+=String(hh_to_next_pass);
+        displaybuffer+=":";
+        if(mm_to_next_pass<10) displaybuffer+="0";
+        displaybuffer+=String(mm_to_next_pass);
+        displaybuffer+=":";
+        if(ss_to_next_pass<10) displaybuffer+="0";
+        displaybuffer+=String(ss_to_next_pass);
+        if (passVisible) displaybuffer+=" M:"+passMagnitude;
 
-        VFD.sendString(framebuffer);
+        VFD.sendString(displaybuffer);
 
         /*
         if(hh_to_next_pass<10) VFD.sendChar('0');
@@ -275,32 +272,25 @@ switch(state)
 
   case 5: //visible pass
         VFD.clear();
-        PWM_ramp(true); //lights fade on
 
         VFD.scrollMode(true);
 
         VFD.sendString("VISIBLE PASS STARTING!");
-        delay(500);
 
-        framebuffer="      Magnitude: "+passMagnitude;
-        VFD.sendString(framebuffer);
-        //VFD.sendString("      Magnitude: ");
-        //VFD.sendString(passMagnitude);
+        PWM_ramp(true); //lights fade on
 
-        delay(500);
-
-        framebuffer="      Direction: "+passStartDir;
-        VFD.sendString(framebuffer);
-        //VFD.sendString("      Direction: ");
-        //VFD.sendString(passStartDir);
+        displaybuffer="      Magnitude: "+passMagnitude;
+        VFD.sendString(displaybuffer);
 
         delay(500);
 
-        framebuffer="      Duration: "+String((int)(passEndEpoch-passStartEpoch))+" seconds...";
-        VFD.sendString(framebuffer);
-        //VFD.sendString("      Duration: ");
-        //VFD.sendString(String((int)(passEndEpoch-passStartEpoch)));
-        //VFD.sendString(" seconds...");
+        displaybuffer="      Direction: "+passStartDir;
+        VFD.sendString(displaybuffer);
+
+        delay(500);
+
+        displaybuffer="      Duration: "+String((int)(passEndEpoch-passStartEpoch))+" seconds...";
+        VFD.sendString(displaybuffer);
 
         delay(1500);
 
@@ -308,68 +298,31 @@ switch(state)
 
         //print info about upcoming pass max
         VFD.clear();
-        framebuffer = "Visible pass max @" + passMaxDir + " in ";
-        VFD.sendString(framebuffer);
-        temp_vfd_position=framebuffer.length();
-        /*
-        VFD.sendString("Visible pass max @"); //18
-        VFD.sendString(passMaxDir); //4,5 or 6
-        VFD.sendString(" in "); //4
-        temp_vfd_position=22+passMaxDir.length(); //26,27 or 28
-        */
+        displaybuffer = "Visible pass max @" + passMaxDir + " in ";
+        VFD.sendString(displaybuffer);
+        temp_vfd_position=displaybuffer.length();
         break;
 
   case 6: //visible pass countdown to max
         VFD.setPos(temp_vfd_position);
 
-        framebuffer=String(int(passMaxEpoch-currentEpoch)) + " seconds"; //create a printable string from the time until pass max
-
-        for(int i=VFD_SIZE-(framebuffer.length()+temp_vfd_position);i>1;i--) framebuffer+=" "; //append spaces to the string to match size of display
-
-        VFD.sendString(framebuffer);
-
-        /*
-        timetomax=(int)(passMaxEpoch-currentEpoch);
-        VFD.sendString(String(timetomax));
-        VFD.sendString(" seconds"); //8
-
-        //34,35 or 36
-        if(timetomax<100) VFD.sendChar(' ');
-        if(timetomax<10) VFD.sendChar('  ');
-        //37, 38 or 39
-        */
+        displaybuffer=String(int(passMaxEpoch-currentEpoch)) + " seconds"; //create a printable string from the time until pass max
+        for(int i=DISPLAY_SIZE-(temp_vfd_position+displaybuffer.length());i>0;i--) displaybuffer+=" "; //append spaces to the string to match size of display
+        VFD.sendString(displaybuffer);
         break;
 
   case 7: //visible pass print end info
         VFD.clear();
-        framebuffer = "Visible pass end @" + passEndDir + " in ";
-        VFD.sendString(framebuffer);
-        temp_vfd_position=framebuffer.length();
-        /*
-        VFD.sendString("Visible pass end @");  //18
-        VFD.sendString(passEndDir);            //4-6
-        VFD.sendString(" in ");              //4
-        temp_vfd_position=22+passEndDir.length();
-        */
+        displaybuffer = "Visible pass end @" + passEndDir + " in ";
+        VFD.sendString(displaybuffer);
+        temp_vfd_position=displaybuffer.length();
         break;
 
   case 8: //visible pass countdown to end
         VFD.setPos(temp_vfd_position);
-
-        framebuffer=String(int(passEndEpoch-currentEpoch)) + " seconds"; //create a printable string from the time until pass end
-
-        for(int i=VFD_SIZE-(framebuffer.length()+temp_vfd_position);i>1;i--) framebuffer+=" "; //append spaces to the string to match size of display
-
-        VFD.sendString(framebuffer);
-
-        /*
-        timetoend = (int)(passEndEpoch-currentEpoch);
-        VFD.sendString(String(timetoend)); //1-3
-        VFD.sendString(" seconds");
-
-        if(timetoend<100) VFD.sendChar(' ');
-        if(timetoend<10) VFD.sendChar('  ');
-        */
+        displaybuffer=String(int(passEndEpoch-currentEpoch)) + " seconds"; //create a printable string from the time until pass end
+        for(int i=DISPLAY_SIZE-(temp_vfd_position+displaybuffer.length());i>0;i--) displaybuffer+=" "; //append spaces to the string to match size of display
+        VFD.sendString(displaybuffer);
         break;
 
   case 9: //pass ended
@@ -588,35 +541,32 @@ C:::::C                L:::::L               O:::::O     O:::::OC:::::C         
 void clock()
 {
 
-                              //TODO: should check if time has changed befgore printing!
+    VFD.setPos(DISPLAY_SIZE-8); //set at the far right end of display
 
-  //VFDchar(1,30); //set VFD position.
-  VFD.setPos(32);
-
-   // print the hour, minute and second:
+    // print the hour, minute and second:
 
     unsigned long hours=((currentEpoch  % 86400L) / 3600)+GMT_plus; //calc the hour (86400 equals secs per day)
     if (DST) hours++; //daylight savings boolean is checked
     unsigned long minutes=((currentEpoch % 3600) / 60);
     unsigned long seconds= (currentEpoch % 60);
 
-    if (hours>23) hours=hours-24; //offset check since GMT and DST offsets are added after modulo
+    if ( hours > 23 ) hours = hours-24; //offset check since GMT and DST offsets are added after modulo
 
-    if(hours<10) VFD.sendChar('0'); //add leading '0' to hours lower than 10
+    displaybuffer=""; //start out empty
 
-    VFD.sendString(String(hours)); // print the hour
+    if( hours < 10 ) displaybuffer+="0"; //add leading '0' to hours lower than 10
 
-    VFD.sendChar(':');
+    displaybuffer+=String(hours)+":";
 
+    if ( minutes < 10 ) displaybuffer+="0"; //add leading '0' to minutes lower than 10
 
-    if ( minutes < 10 ) VFD.sendChar('0'); //add leading '0' to minutes lower than 10
-    VFD.sendString(String(minutes)); // print the minute (3600 equals secs per minute)
+    displaybuffer+=String(minutes)+":";
 
-    VFD.sendChar(':');
+    if ( seconds < 10 ) displaybuffer+="0"; //add leading '0' to seconds lower than 10
 
+    displaybuffer+=String(seconds);
 
-    if ( seconds < 10 ) VFD.sendChar('0'); //add leading '0' to seconds lower than 10
-    VFD.sendString(String(seconds)); // print the second
+    VFD.sendString(displaybuffer);
 }
 
 
@@ -789,8 +739,8 @@ else
     passStartDir=String((char *)startp);
 
     //PRINT
-    VFD.sendString("Next pass start direction: ");
-    VFD.sendString(passStartDir);
+    displaybuffer="Next pass start direction: "+passStartDir;
+    VFD.sendString(displaybuffer);
     delay(1000);
     VFD.clear();
 
@@ -809,8 +759,8 @@ else
     passMaxDir=String((char *)startp);
 
     //PRINT:
-    VFD.sendString("Next pass MAX direction: ");
-    VFD.sendString(passMaxDir);
+    displaybuffer="Next pass MAX direction: "+passMaxDir;
+    VFD.sendString(displaybuffer);
     delay(1000);
     VFD.clear();
 
@@ -829,40 +779,38 @@ else
     //END DIR:
     passEndDir=String((char *)startp);
     //PRINT:
-    VFD.sendString("Next pass END direction: ");
-    VFD.sendString(passEndDir);
+    displaybuffer="Next pass END direction: "+passEndDir;
+    VFD.sendString(displaybuffer);
     delay(1000);
     VFD.clear();
 
 
     //SECS TO PASS:
     secs_to_next_pass=passStartEpoch-currentEpoch;
-    VFD.sendString("SECONDS TO NEXT PASS: ");
-    VFD.sendString(String(secs_to_next_pass));
-    delay(2500);
+    displaybuffer="Seconds to next pass: "+String(secs_to_next_pass);
+    VFD.sendString(displaybuffer);
+    delay(1500);
     VFD.clear();
 
-    VFD.sendString("Duration: ");
-    VFD.sendString(String((int)(passEndEpoch-passStartEpoch)));
-    VFD.sendString(" seconds...");
-    delay(2500);
+    displaybuffer="Duration: "+String((int)(passEndEpoch-passStartEpoch))+" seconds...";
+    VFD.sendString(displaybuffer);
+    delay(1500);
     VFD.clear();
 
     /*
-    VFD.sendString("  SECONDS TIL PASS MAX: ");
-    VFD.sendString(String((int)(passMaxEpoch-currentEpoch)));
+    displaybuffer="  SECONDS TIL PASS MAX: "+String((int)(passMaxEpoch-currentEpoch));
+    VFD.sendString(displaybuffer);
 
     delay(300);
     VFD.clear();
 
-    VFD.sendString("  SECONDS TIL PASS END: ");
-    VFD.sendString(String((int)(passEndEpoch-currentEpoch)));
+    displaybuffer="  SECONDS TIL PASS END: "+String((int)(passEndEpoch-currentEpoch));
+    VFD.sendString(displaybuffer);
 
 
     delay(300);
     VFD.clear();
     */
-  //memset(packetBuffer, 0, NTP_PACKET_SIZE); //reset buffer
 }
 
 /*
@@ -892,7 +840,6 @@ unsigned long sendNTPpacket(IPAddress& address)
   memset(packetBuffer, 0, NTP_PACKET_SIZE);
 
   // Initialize values needed to form NTP request
-  // (see URL above for details on the packets)
   packetBuffer[0] = 0b11100011;   // LI, Version, Mode
   packetBuffer[1] = 0;     // Stratum, or type of clock
   packetBuffer[2] = 6;     // Polling Interval
@@ -944,16 +891,12 @@ void handle_ntp()
     unsigned long secsSince1900 = highWord << 16 | lowWord;
 
     // now convert NTP time into everyday time:
-    // VFD.sendString("Current unix time = ");
 
 	// Unix time starts on Jan 1 1970. In seconds, that's 2208988800:
     const unsigned long seventyYears = 2208988800UL;
 
     // subtract seventy years:
     currentEpoch = secsSince1900 - seventyYears;
-    // print Unix time:
 
     lastmillis = millis();
-    //Serial.println(currentEpoch);
-    //VFD.sendString(String(currentEpoch));
 }
