@@ -37,6 +37,6 @@ while True:
 		#end is 120 seconds after that
 		tend = tmax + 120
 
-		MESSAGE='V\1-2.0\0%s\0SE-10\0%s\0S-22\0%s\0SW-10' % (tstart,tmax,tend)
+		MESSAGE='V\01\0-2.0\0%s\0SE-10\0%s\0S-22\0%s\0SW-10' % (tstart,tmax,tend)
                 UDPSock.sendto(MESSAGE, (remoteIP, remotePort))
 		print 'TX: %s' % (MESSAGE)
