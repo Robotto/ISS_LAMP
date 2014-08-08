@@ -27,16 +27,16 @@ while True:
         data,addr = UDPSock.recvfrom(1024)
         remoteIP=IP(addr[0]).strNormal() #convert address of packet origin to string
         #print data.strip(),addr
-	print 'RX: %s @ %s from %s' % (data, ctime(), remoteIP) 
+	print 'RX: %s @ %s from %s' % (data, ctime(), remoteIP)
         if (data.strip() == 'respond'):
 		currenttime = int(time())
-		#start in 60 seconds
-		tstart = currenttime + 60
-		#max is 60 seconds later
-		tmax = tstart + 60
-		#end is 60 seconds after that
-		tend = tmax + 60
+		#start in 30 seconds
+		tstart = currenttime + 30
+		#max is 30 seconds later
+		tmax = tstart + 30
+		#end is 120 seconds after that
+		tend = tmax + 120
 
-		MESSAGE='V\0-2.0\0%s\0SE-10\0%s\0S-22\0%s\0SW-10' % (tstart,tmax,tend)
+		MESSAGE='V\1-2.0\0%s\0SE-10\0%s\0S-22\0%s\0SW-10' % (tstart,tmax,tend)
                 UDPSock.sendto(MESSAGE, (remoteIP, remotePort))
 		print 'TX: %s' % (MESSAGE)
