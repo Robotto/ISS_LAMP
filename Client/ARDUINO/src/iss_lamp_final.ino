@@ -11,10 +11,13 @@ VFD to class .. or not.. 800 lines of code isn't that bad.. is it?
 
 */
 
+#define VFD_SIZE 40
+
 #include <SPI.h>
 #include <Ethernet.h>
 #include <Dns.h>
 #include <VFD.h>
+
 
 
 byte mac[] = {  0x90, 0xA2, 0xDA, 0x0D, 0x34, 0xFC }; //MAC address of the Ethernet shield
@@ -199,6 +202,10 @@ LLLLLLLLLLLLLLLLLLLLLLLL   ooooooooooo      ooooooooooo    p::::::pppppppp
 void loop()
 {
 
+int timetomax=0;
+int timetoend=0;
+String framebuffer="  ";
+
 timekeeper();
 
 
@@ -224,6 +231,20 @@ switch(state)
   case 2:       //probably could be called default state..
         if(passVisible) VFD.setPos(15);
         else VFD.setPos(18);
+        framebuffer ="";
+        if(hh_to_next_pass<10) framebuffer+="0";
+        framebuffer+=String(hh_to_next_pass);
+        framebuffer+=":";
+        if(mm_to_next_pass<10) framebuffer+="0";
+        framebuffer+=String(mm_to_next_pass);
+        framebuffer+=":";
+        if(ss_to_next_pass<10) framebuffer+="0";
+        framebuffer+=String(ss_to_next_pass);
+        if (passVisible) framebuffer+=" M:"+passMagnitude;
+
+        VFD.sendString(framebuffer);
+
+        /*
         if(hh_to_next_pass<10) VFD.sendChar('0');
         VFD.sendString(String(hh_to_next_pass));
         VFD.sendChar(':');
@@ -237,6 +258,7 @@ switch(state)
             VFD.sendString(" M:");
             VFD.sendString(passMagnitude);
         }
+        */
         clock();
         break;
 
@@ -260,19 +282,25 @@ switch(state)
         VFD.sendString("VISIBLE PASS STARTING!");
         delay(500);
 
-        VFD.sendString("      Magnitude: ");
-        VFD.sendString(passMagnitude);
+        framebuffer="      Magnitude: "+passMagnitude;
+        VFD.sendString(framebuffer);
+        //VFD.sendString("      Magnitude: ");
+        //VFD.sendString(passMagnitude);
 
         delay(500);
 
-        VFD.sendString("      Direction: ");
-        VFD.sendString(passStartDir);
+        framebuffer="      Direction: "+passStartDir;
+        VFD.sendString(framebuffer);
+        //VFD.sendString("      Direction: ");
+        //VFD.sendString(passStartDir);
 
         delay(500);
 
-        VFD.sendString("      Duration: ");
-        VFD.sendString(String((int)(passEndEpoch-passStartEpoch)));
-        VFD.sendString(" seconds...");
+        framebuffer="      Duration: "+String((int)(passEndEpoch-passStartEpoch))+" seconds...";
+        VFD.sendString(framebuffer);
+        //VFD.sendString("      Duration: ");
+        //VFD.sendString(String((int)(passEndEpoch-passStartEpoch)));
+        //VFD.sendString(" seconds...");
 
         delay(1500);
 
@@ -280,30 +308,68 @@ switch(state)
 
         //print info about upcoming pass max
         VFD.clear();
-        VFD.sendString("Visible pass max @");
-        VFD.sendString(passMaxDir);
-        VFD.sendString(" in T-");
-        temp_vfd_position=24+passMaxDir.length();
+        framebuffer = "Visible pass max @" + passMaxDir + " in ";
+        VFD.sendString(framebuffer);
+        temp_vfd_position=framebuffer.length();
+        /*
+        VFD.sendString("Visible pass max @"); //18
+        VFD.sendString(passMaxDir); //4,5 or 6
+        VFD.sendString(" in "); //4
+        temp_vfd_position=22+passMaxDir.length(); //26,27 or 28
+        */
         break;
 
   case 6: //visible pass countdown to max
         VFD.setPos(temp_vfd_position);
-        VFD.sendString(String((int)(passMaxEpoch-currentEpoch)));
-        VFD.sendString(" seconds ");
+
+        framebuffer=String(int(passMaxEpoch-currentEpoch)) + " seconds"; //create a printable string from the time until pass max
+
+        for(int i=VFD_SIZE-(framebuffer.length()+temp_vfd_position);i>1;i--) framebuffer+=" "; //append spaces to the string to match size of display
+
+        VFD.sendString(framebuffer);
+
+        /*
+        timetomax=(int)(passMaxEpoch-currentEpoch);
+        VFD.sendString(String(timetomax));
+        VFD.sendString(" seconds"); //8
+
+        //34,35 or 36
+        if(timetomax<100) VFD.sendChar(' ');
+        if(timetomax<10) VFD.sendChar('  ');
+        //37, 38 or 39
+        */
         break;
 
   case 7: //visible pass print end info
         VFD.clear();
+        framebuffer = "Visible pass end @" + passEndDir + " in ";
+        VFD.sendString(framebuffer);
+        temp_vfd_position=framebuffer.length();
+        /*
         VFD.sendString("Visible pass end @");  //18
         VFD.sendString(passEndDir);            //4-6
-        VFD.sendString(" in T-");              //6
-        temp_vfd_position=24+passEndDir.length();
+        VFD.sendString(" in ");              //4
+        temp_vfd_position=22+passEndDir.length();
+        */
         break;
 
   case 8: //visible pass countdown to end
         VFD.setPos(temp_vfd_position);
-        VFD.sendString(String((int)(passEndEpoch-currentEpoch))); //1-3
-        VFD.sendString(" seconds ");
+
+        framebuffer=String(int(passEndEpoch-currentEpoch)) + " seconds"; //create a printable string from the time until pass end
+
+        for(int i=VFD_SIZE-(framebuffer.length()+temp_vfd_position);i>1;i--) framebuffer+=" "; //append spaces to the string to match size of display
+
+        VFD.sendString(framebuffer);
+
+        /*
+        timetoend = (int)(passEndEpoch-currentEpoch);
+        VFD.sendString(String(timetoend)); //1-3
+        VFD.sendString(" seconds");
+
+        if(timetoend<100) VFD.sendChar(' ');
+        if(timetoend<10) VFD.sendChar('  ');
+        */
         break;
 
   case 9: //pass ended
