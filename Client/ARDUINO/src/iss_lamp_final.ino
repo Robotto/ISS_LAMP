@@ -34,8 +34,8 @@ EthernetUDP Udp; // A UDP instance to let us send and receive packets over UDP
 
 //UDP (robottobox) stuff:
 const unsigned int localPort = 1337;      // local port to listen for UDP packets
-const int NTP_PACKET_SIZE=128; // NTP time stamp is in the first 48 bytes of the message
-byte packetBuffer[ NTP_PACKET_SIZE]; //buffer to hold incoming and outgoing packets
+const int NTP_PACKET_SIZE = 128; // Ntemp_vfd_positiontemp_vfd_positionTP time stamp is in the first 48 bytes of the message
+byte packetBuffer[ NTP_PACKET_SIZE ]; //buffer to hold incoming and outgoing packets
 int UDPretryDelay = 0;
 int UDPretries = 0;
 
