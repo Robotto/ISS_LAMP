@@ -18,11 +18,11 @@ VFD to class .. or not.. 800 lines of code isn't that bad.. is it?
 #include <Dns.h>
 #include <VFD.h>
 
-
-
 byte mac[] = {  0x90, 0xA2, 0xDA, 0x0D, 0x34, 0xFC }; //MAC address of the Ethernet shield
+
 IPAddress robottobox(62,212,66,171); //IP address constructor
 IPAddress DNS_IP(8,8,8,8); //Google DNS.
+
 char NTP_hostName[] = "dk.pool.ntp.org"; //should init with a null-char termination.
 IPAddress timeServer;//init empty IP adress container
 
@@ -205,7 +205,6 @@ void loop()
 
 timekeeper();
 
-
 switch(state)
   {
   case 0:
@@ -215,18 +214,21 @@ switch(state)
         delay(500);
         VFD.sendString("  ISS RX!!");
         handle_ISS_udp();
-        //state=1;
+
+        state=1;
         break;
 
   case 1:
         VFD.clear();
         if (passVisible) VFD.sendString("Visible pass T-LOADING          LOADING"); //15
         else VFD.sendString("Regular pass    T-LOADING        LOADING");
-        //state=2;
+
+        state=2;
         break;
 
   case 2:       //probably could be called default state..
-        if(passVisible) VFD.setPos(15);
+
+        if(passVisible) VFD.setPos(15); //right after T-
         else VFD.setPos(18);
         displaybuffer ="";
         if(hh_to_next_pass<10) displaybuffer+="0";
@@ -238,77 +240,60 @@ switch(state)
         if(ss_to_next_pass<10) displaybuffer+="0";
         displaybuffer+=String(ss_to_next_pass);
         if (passVisible) displaybuffer+=" M:"+passMagnitude;
-
         VFD.sendString(displaybuffer);
 
-        /*
-        if(hh_to_next_pass<10) VFD.sendChar('0');
-        VFD.sendString(String(hh_to_next_pass));
-        VFD.sendChar(':');
-        if(mm_to_next_pass<10) VFD.sendChar('0');
-        VFD.sendString(String(mm_to_next_pass));
-        VFD.sendChar(':');
-        if(ss_to_next_pass<10) VFD.sendChar('0');
-        VFD.sendString(String(ss_to_next_pass));
-        if (passVisible)
-        {
-            VFD.sendString(" M:");
-            VFD.sendString(passMagnitude);
-        }
-        */
         clock();
+
+        if(currentEpoch>=passStartEpoch)
+            {
+                if(!passVisible) state=3;
+                else state=5;
+            }
         break;
 
-  case 3: //regular  pass
+  case 3: //regular pass start
         VFD.clear();
-        PWM_ramp(true); //lights fade on
         VFD.sendString("Non-visible pass in progress.");
-        //MAYBE ADD COUNTDOWN?
-        break;
-
-  case 4:
-        clock();
-        break;
-
-  case 5: //visible pass
-        VFD.clear();
-
-        VFD.scrollMode(true);
-
-        VFD.sendString("VISIBLE PASS STARTING!");
-
         PWM_ramp(true); //lights fade on
+        //MAYBE ADD COUNTDOWN?
 
-        displaybuffer="      Magnitude: "+passMagnitude;
-        VFD.sendString(displaybuffer);
+        state=4;
+        break;
 
+  case 4: //regular pass in progress
+        clock();
+
+        if(currentEpoch>=passEndEpoch) state=8;
+        break;
+
+  case 5: //visible pass start
+        VFD.clear();
+        VFD.scrollMode(true);
+        VFD.sendString("VISIBLE PASS STARTING!");
+        PWM_ramp(true); //lights fade on
+        VFD.sendString(" M: "+passMagnitude);
         delay(500);
-
-        displaybuffer="      Direction: "+passStartDir;
-        VFD.sendString(displaybuffer);
-
+        VFD.sendString(" @"+passStartDir);
         delay(500);
-
-        displaybuffer="      Duration: "+String((int)(passEndEpoch-passStartEpoch))+" seconds...";
-        VFD.sendString(displaybuffer);
-
+        VFD.sendString(" Duration: "+String((int)(passEndEpoch-passStartEpoch))+" seconds...");
         delay(1500);
-
         VFD.scrollMode(false);
-
         //print info about upcoming pass max
         VFD.clear();
         displaybuffer = "Visible pass max @" + passMaxDir + " in ";
         VFD.sendString(displaybuffer);
         temp_vfd_position=displaybuffer.length();
+
+        state = 6;
         break;
 
   case 6: //visible pass countdown to max
         VFD.setPos(temp_vfd_position);
-
         displaybuffer=String(int(passMaxEpoch-currentEpoch)) + " seconds"; //create a printable string from the time until pass max
         for(int i=DISPLAY_SIZE-(temp_vfd_position+displaybuffer.length());i>0;i--) displaybuffer+=" "; //append spaces to the string to match size of display
         VFD.sendString(displaybuffer);
+
+        if(currentEpoch>=passMaxEpoch) state=7;
         break;
 
   case 7: //visible pass print end info
@@ -316,6 +301,8 @@ switch(state)
         displaybuffer = "Visible pass end @" + passEndDir + " in ";
         VFD.sendString(displaybuffer);
         temp_vfd_position=displaybuffer.length();
+
+        state=8;
         break;
 
   case 8: //visible pass countdown to end
@@ -323,6 +310,8 @@ switch(state)
         displaybuffer=String(int(passEndEpoch-currentEpoch)) + " seconds"; //create a printable string from the time until pass end
         for(int i=DISPLAY_SIZE-(temp_vfd_position+displaybuffer.length());i>0;i--) displaybuffer+=" "; //append spaces to the string to match size of display
         VFD.sendString(displaybuffer);
+
+        if (currentEpoch>=passEndEpoch) state=9;
         break;
 
   case 9: //pass ended
@@ -331,10 +320,10 @@ switch(state)
         PWM_ramp(false); //lights fade off
         VFD.clear();
         delay(1000);
+
+        state = 0;
         break;
   }
-
-state_update();
 
 }
 
@@ -358,7 +347,7 @@ u:::::::::::::::uu    t::::::tttt:::::ti::::::il::::::ls:::::ssss::::::s ::::::
     uuuuuuuu  uuuu        ttttttttttt  iiiiiiiillllllll  sssssssssss
 */
 
-void timekeeper(void)
+void timekeeper()
 {
 
     while(millis()<lastmillis+1000) {} //WAIT FOR ABOUT A SECOND
@@ -388,128 +377,19 @@ void timekeeper(void)
     ss_to_next_pass=secs_to_next_pass % 60;
 }
 
-void state_update()
-{
-    switch(state)
-    {
-        case 0: //get new pass
-            state=1;
-            break;
-
-        case 1: //print T-
-            state=2;
-            break;
-
-        case 2: //countdown and clock
-            if(currentEpoch>=passStartEpoch)
-                {
-                if(!passVisible) state=3;
-                else state=5;
-                }
-            break;
-
-        case 3: //non visible pass start
-            state=4;
-            break;
-
-        case 4: //non visible pass in progress
-            if(currentEpoch>=passEndEpoch) state=8;
-            break;
-
-        case 5: //Visible pass start
-            state = 6;
-            break;
-
-        case 6: //Visible pass in progress before max
-            if(currentEpoch>=passMaxEpoch) state=7;
-            break;
-
-        case 7: //Visible pass at max (print end info)
-            state=8;
-            break;
-
-        case 8: //Visible pass in progress intill end
-            if (currentEpoch>=passEndEpoch) state=9;
-            break;
-
-        case 9: //End of pass
-            state = 0;
-            break;
-
-        default:
-            VFD.clear();
-            VFD.sendString("statemachine b0rked!");
-            errorclock();
-            break;
-
-    }
-}
-
-void lookup_ntp_ip(void)
+void lookup_ntp_ip()
 {
     if(my_dns.getHostByName(NTP_hostName, timeServer) !=1)
     {
         VFD.clear();
         VFD.sendString("NTP DNS lookup failed");
-        delay(1000);
+        delay(3000);
         errorclock(); //if it returns something other than 1 we're in trouble.
     }
-
-
 }
 
-void(* resetFunc) (void) = 0; //declare reset function @ address 0
+void(* resetFunc) () = 0; //declare reset function @ address 0
 
-void errorclock(void)
-{
-  //PWM_ramp(false); //lights off
-  digitalWrite(PWM_PIN,true);
-  unsigned int error_seconds=0;
-  VFD.clear();
-  VFD.setPos(1); //set VFD position.
-  VFD.sendChar('!'); //print error indicator
-  //VFD.sendChar(0x16); //cursor off
-  VFD.cursorMode(VFD_CURSOR_OFF);
-
-  while(1)
-  {
-    while(millis()<lastmillis+1000) {} //WAIT FOR ABOUT A SECOND
-    currentEpoch+=((millis()-lastmillis)/1000); //add  a second or more to the current epoch
-    lastmillis=millis();
-    error_seconds++;
-
-    clock();
-
-    if (error_seconds>120) resetFunc();  //call reset after 2 minutes
-  }
-}
-
-/*
-PPPPPPPPPPPPPPPPP   WWWWWWWW                           WWWWWWWWMMMMMMMM               MMMMMMMM
-P::::::::::::::::P  W::::::W                           W::::::WM:::::::M             M:::::::M
-P::::::PPPPPP:::::P W::::::W                           W::::::WM::::::::M           M::::::::M
-PP:::::P     P:::::PW::::::W                           W::::::WM:::::::::M         M:::::::::M
-  P::::P     P:::::P W:::::W           WWWWW           W:::::W M::::::::::M       M::::::::::M
-  P::::P     P:::::P  W:::::W         W:::::W         W:::::W  M:::::::::::M     M:::::::::::M ::::::
-  P::::PPPPPP:::::P    W:::::W       W:::::::W       W:::::W   M:::::::M::::M   M::::M:::::::M ::::::
-  P:::::::::::::PP      W:::::W     W:::::::::W     W:::::W    M::::::M M::::M M::::M M::::::M ::::::
-  P::::PPPPPPPPP         W:::::W   W:::::W:::::W   W:::::W     M::::::M  M::::M::::M  M::::::M
-  P::::P                  W:::::W W:::::W W:::::W W:::::W      M::::::M   M:::::::M   M::::::M
-  P::::P                   W:::::W:::::W   W:::::W:::::W       M::::::M    M:::::M    M::::::M
-  P::::P                    W:::::::::W     W:::::::::W        M::::::M     MMMMM     M::::::M ::::::
-PP::::::PP                   W:::::::W       W:::::::W         M::::::M               M::::::M ::::::
-P::::::::P                    W:::::W         W:::::W          M::::::M               M::::::M ::::::
-P::::::::P                     W:::W           W:::W           M::::::M               M::::::M
-PPPPPPPPPP                      WWW             WWW            MMMMMMMM               MMMMMMMM
-*/
-/*
-void PWM_ramp(boolean direction, unsigned long duration_ms) //true=up/false=down , duration in millisecs
-{
-  //this may seem reversed, but the hardware that drives the LED's inverts the PWM, so that 100% is (almost) full off.
-  if(direction) for (int i = 255; i > 0; i--) {analogWrite(PWM_PIN,i); delay(duration_ms>>8);} //(duration_m/255)
-  else for (int i = 0; i < 255; i++) {analogWrite(PWM_PIN,i); delay(duration_ms>>8);}
-}
-*/
 
 void PWM_ramp(boolean direction) //true=up/false=down , duration in millisecs
 {
@@ -543,32 +423,46 @@ void clock()
 
     VFD.setPos(DISPLAY_SIZE-8); //set at the far right end of display
 
-    // print the hour, minute and second:
-
     unsigned long hours=((currentEpoch  % 86400L) / 3600)+GMT_plus; //calc the hour (86400 equals secs per day)
     if (DST) hours++; //daylight savings boolean is checked
     unsigned long minutes=((currentEpoch % 3600) / 60);
     unsigned long seconds= (currentEpoch % 60);
 
+    // HH:MM:SS
     if ( hours > 23 ) hours = hours-24; //offset check since GMT and DST offsets are added after modulo
-
     displaybuffer=""; //start out empty
-
     if( hours < 10 ) displaybuffer+="0"; //add leading '0' to hours lower than 10
-
     displaybuffer+=String(hours)+":";
-
     if ( minutes < 10 ) displaybuffer+="0"; //add leading '0' to minutes lower than 10
-
     displaybuffer+=String(minutes)+":";
-
     if ( seconds < 10 ) displaybuffer+="0"; //add leading '0' to seconds lower than 10
-
     displaybuffer+=String(seconds);
-
     VFD.sendString(displaybuffer);
 }
 
+void errorclock()
+{
+  //PWM_ramp(false); //lights off
+  digitalWrite(PWM_PIN,true);
+  unsigned int error_seconds=0;
+  VFD.clear();
+  VFD.setPos(1); //set VFD position.
+  VFD.sendChar('!'); //print error indicator
+  //VFD.sendChar(0x16); //cursor off
+  VFD.cursorMode(VFD_CURSOR_OFF);
+
+  while(1)
+  {
+    while(millis()<lastmillis+1000) {} //WAIT FOR ABOUT A SECOND
+    currentEpoch+=((millis()-lastmillis)/1000); //add  a second or more to the current epoch
+    lastmillis=millis();
+    error_seconds++;
+
+    clock();
+
+    if (error_seconds>300) resetFunc();  //call reset after 5 minutes
+  }
+}
 
 /*
 UUUUUUUU     UUUUUUUUDDDDDDDDDDDDD      PPPPPPPPPPPPPPPPP                                                                   iiii          tttt
