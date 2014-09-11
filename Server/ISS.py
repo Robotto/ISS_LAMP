@@ -9,6 +9,7 @@
 
 import mechanize
 import GeoIP
+import logging
 
 from BeautifulSoup import BeautifulSoup
 
@@ -237,14 +238,21 @@ def passes_too_old(passes): #checks the age of the passes returns false if we're
 
 
 try:
+
+	logging.basicConfig(filename='ISS.log',level=logging.DEBUG)
+
 	print 'Started @ %s' %(ctime())
+	logging.info(str(ctime()) + ': Started')
+
+
+
 
 	DST = localtime().tm_isdst
 	if DST:
-		DSTstring = 'active'
+		print 'Daylight savings is active'
 	else:
-		DSTstring = 'inactive'
-	print 'Daylight savings is %s' % (DSTstring)
+		print 'Daylight savings is inactive'
+
 
 	#currenttime = int(time())
 	#DEBUG MODE:
@@ -257,7 +265,7 @@ try:
 
 
 	print "Ready and waiting for inbound on port: %s"%incomingPort
-
+	logging.info('Listening on port: '+str(incomingPort))
 
 	#print "next visible pass: %s" %next_visible_pass
 	#print
@@ -274,13 +282,7 @@ try:
 		remoteIP=IP(addr[0]).strNormal() #convert address of packet origin to string
 		#print data.strip(),addr
 
-		gi = GeoIP.open("GeoLiteCity.dat", GeoIP.GEOIP_STANDARD) #get your own at http://dev.maxmind.com/geoip/legacy/geolite/
-		gir = gi.record_by_addr(remoteIP)
-
-		lat=gir['latitude']
-		lon=gir['longitude']
-		timezone=gir['time_zone']
-
+		logging.info(str(ctime()) + ': RX: \"' + str(data.rstrip('\n')) + '\" from ' + str(remoteIP))
 		print
 		print ' RX: "%s" @ %s from %s' % (data.rstrip('\n'), ctime(), remoteIP)
 		print ' Latitude: %s' %lat
@@ -289,10 +291,20 @@ try:
 		print
 
 
+		gi = GeoIP.open("GeoLiteCity.dat", GeoIP.GEOIP_STANDARD) #get your own at http://dev.maxmind.com/geoip/legacy/geolite/
+		gir = gi.record_by_addr(remoteIP)
+
+		lat=gir['latitude']
+		lon=gir['longitude']
+		timezone=gir['time_zone']
+
+
+
 		currenttime = int(time()) #Update time
 		DST = localtime().tm_isdst #Update DST byte
 
 		if last_html_get_unix_time==0: #if passes have never been recieved = first run.
+			logging.info(str(ctime()) + ': Retrieving passes.')
 			visiblepasses = refresh_passes(True)
 			regularpasses = refresh_passes(False)
 			firstIP=remoteIP
@@ -301,17 +313,20 @@ try:
 		if remoteIP!=firstIP:
 			print '     WARNING:     '
 			print '     Change of client IP address. Pass data most likely invalid!!     '
+			logging.warning(str(ctime()) + ': Change of client IP address. Pass data most likely invalid!!')
 
 		#check the age of the passes, refresh them if neccesary, but only if quarantine isn't set:
 		if currenttime>last_html_get_unix_time+html_cooldown_time:
 			quarantine=False
 			print "Quarantine inactive. Everything is normal...  EVERYTHING!"
 			print
+			logging.info(str(ctime()) + ': Quarantine NOT active.')
 		else:
 			quarantine=True
 			seconds_to_lift=html_cooldown_time-(currenttime-last_html_get_unix_time)
 			unixtime_at_lift=localtime(currenttime+seconds_to_lift)
 			#print "unixtime_at_lift: %s"%unixtime_at_lift
+			logging.info(str(ctime()) + ': Quarantine active.')
 			print "Quarantine ACTIVE, here be dragons. normal operations will resume in %s seconds @ %s"%(seconds_to_lift, strftime('%d/%m %H:%M:%S',unixtime_at_lift))
 			print
 
@@ -319,12 +334,14 @@ try:
 		if (quarantine is False):
 
 			if passes_too_old(visiblepasses):
+				logging.info(str(ctime()) + ': Refreshing visible passes.')
 				print "Visible pass list for %s outdated, refreshing..." %(remoteIP)
 				visiblepasses.clear()
 				visiblepasses=refresh_passes(True)
 				last_html_get_unix_time=currenttime
 
 			if passes_too_old(regularpasses):
+				logging.info(str(ctime()) + ': Refreshing regular passes.')
 				print "Regular pass list for %s outdated, refreshing..." &(remoteIP)
 				regularpasses.clear()
 				regularpasses=refresh_passes(False)
@@ -332,9 +349,11 @@ try:
 
 		else:
 			if passes_too_old(visiblepasses):
+				logging.warning(str(ctime()) + ': Ran out of visible passes before end of quarantine.')
 				print "Visible pass data outdated (or empty). But not enough time has passed since last get from heavens-above.com"
 				visiblepasses.clear()
 			if passes_too_old(regularpasses):
+				logging.warning(str(ctime()) + ': Ran out of regular passes before end of quarantine.')
 				print "Regular pass data outdated (or empty). But not enough time has passed since last get from heavens-above.com"
 				regularpasses.clear()
 			#this means that there will be no data in the deque, and that the bad data string will be sent if asked.
@@ -356,11 +375,13 @@ try:
 				if next_pass[9] is None:
 					print "Not visible, and will start in %s seconds @ %s" %(next_pass[6]-currenttime, next_pass[0].strftime('%d/%m %H:%M:%S'))
 					MESSAGE='R\0%s\0%s\0%s\0%s\0%s\0%s\0%s' % (DST, next_pass[6],next_pass[3],next_pass[7],next_pass[4],next_pass[8],next_pass[5])
+					logging.info(str(ctime()) + ': TX: R' + str(DST) + str(next_pass[6]) + str(next_pass[3]) + str(next_pass[7]) + str(next_pass[4]) + str(next_pass[8]) + str(next_pass[5]))
 
 
 				else:
 					print "VISIBLE! It will start in %s seconds @ %s" %(next_pass[6]-currenttime, next_pass[0].strftime('%d/%m %H:%M:%S'))
 					MESSAGE='V\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s' % (DST, next_pass[9], next_pass[6],next_pass[3],next_pass[7],next_pass[4],next_pass[8],next_pass[5])
+					logging.info(str(ctime()) + ': TX: V' + str(DST) + str(next_pass[9]) + str(next_pass[6]) + str(next_pass[3]) + str(next_pass[7]) + str(next_pass[4]) + str(next_pass[8]) + str(next_pass[5]))
 					#	return (start, max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, mag)
 					#			  0     1    2     3     4     5        6        7        8      9
 					#	(DST, V_mag, V_startUnix, V_loc1, V_maxUnix, V_loc2, V_endUnix, V_loc3)
@@ -370,6 +391,7 @@ try:
 
 			except:
 				MESSAGE='fail at this end, sorry'
+				logging.warning(str(ctime()) + ': parsing of data failed.')
 
 			UDPSock.sendto(MESSAGE, (remoteIP, remotePort))
 			print
@@ -378,3 +400,5 @@ try:
 			print
 except Exception as e:
     print "An error occurred, here's a thing: " + str(e)
+    logging.warning(str(ctime()) + ': Fatal failure! Error message:')
+    logging.warning(str(e))
