@@ -25,28 +25,6 @@ import collections #used to form a collection of passes
 import socket
 from IPy import IP
 
-
-incomingPort = 1337
-remotePort = 1337
-
-# A UDP server listening for packets on port 1337:
-UDPSock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-listen_addr = ("",incomingPort)
-UDPSock.bind(listen_addr)
-
-
-# Global Vars.
-lat = 0
-lon = 0
-timezone = tz.tzlocal() #changed as soon as a lookup occurs
-
-
-
-
-last_html_get_unix_time = 0
-html_cooldown_time = 86400 #24 hrs
-
-
 def refresh_passes(isvisible):
 	html = get_html(isvisible)
 	rows = html_to_rows(html)
@@ -126,7 +104,7 @@ def html_to_rows(html):
 
 def rows_to_sets(Rows):	#calls the rowparser for all the available rows, returns a set of passes.
 
-	passes = collections.deque(maxlen=50)
+	passes = collections.deque(maxlen=50) #magic number...
 
 	for row in Rows:
 		(start, max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, mag) = rowparser(row)
@@ -161,45 +139,31 @@ def rowparser(row):
 	loc2 = '%s-%s' % (az2, alt2)
 	loc3 = '%s-%s' % (az3, alt3)
 
+	(start,startUnix) = maketime(dStr,t1Str)
 
-	#time magic - source timezone is GMT/UTC, remember that!
-	#look at: http://stackoverflow.com/questions/4770297/python-convert-utc-datetime-string-to-local-datetime
+	(max,maxUnix) = maketime(dStr,t2Str)
 
-	from_zone = tz.tzutc()
-	to_zone = tz.gettz(timezone) #determined from the IP of the source of the request
-
-	startStr = '%s %s %s' % (dStr, date.today().year, t1Str) #this will break if next pass is in next calendar year.
-	start_utc = datetime(*strptime(startStr, '%d %b %Y %H:%M:%S')[0:7])
-	start_utc = start_utc.replace(tzinfo=from_zone)
-
-	start = start_utc.astimezone(to_zone) #in local time from here - local time for whoever is doing the lookup
-	startUnix=int(mktime(start.timetuple()))
-
-	#print 'pass start UTC: %s' %start_utc
-	#print 'pass start LOCAL: %s' %start_localtime
-	#print 'Starttime unix string: %s' % startUnix
-
-
-
-	maxStr = '%s %s %s'	% (dStr, date.today().year, t2Str)
-	max_utc = datetime(*strptime(maxStr, '%d %b %Y %H:%M:%S')[0:7])
-	max_utc = max_utc.replace(tzinfo=from_zone)
-	max = max_utc.astimezone(to_zone) #in local time from here
-	maxUnix = int(mktime(max.timetuple()))
-
-	#print 'Maxtime unix string: %s' % maxUnix
-
-	endStr = '%s %s %s' % (dStr, date.today().year, t3Str)
-	end_utc = datetime(*strptime(endStr, '%d %b %Y %H:%M:%S')[0:7])
-	end_utc = end_utc.replace(tzinfo=from_zone)
-	end = end_utc.astimezone(to_zone) #in local time from here
-	endUnix = int(mktime(end.timetuple()))
-
-	#print 'Endtime unix string: %s'"' % endUnix
+	(end,endUnix) = maketime(dStr,t3Str)
 
 	return (start, max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, mag)
 #			  0     1    2    3     4     5         6        7        8      9
 #													^-The magic happens here.
+
+def maketime(dStr,timestring):
+	#time magic - source timezone is GMT/UTC, remember that!
+	#look at: http://stackoverflow.com/questions/4770297/python-convert-utc-datetime-string-to-local-datetime
+	from_zone = tz.tzutc()
+	to_zone = tz.gettz(timezone) #determined from the IP of the source of the request
+
+	#START
+	string = '%s %s %s' % (dStr, date.today().year, timestring) #this will break if next pass is in next calendar year.
+	utc = datetime(*strptime(string, '%d %b %Y %H:%M:%S')[0:7])
+	utc = utc.replace(tzinfo=from_zone)
+	local_time = utc.astimezone(to_zone) #in local time from here - local time for whoever is doing the lookup
+	unix_time =int(mktime(local_time.timetuple()))
+
+	return(local_time,unix_time)
+
 
 def getnextpass(passes): #returns the next future pass
 	for isspass in passes:
@@ -216,18 +180,6 @@ def which_pass_is_next(visible,regular): #determines whether the next visible or
 		return regular
 
 def passes_too_old(passes): #checks the age of the passes returns false if we're still good.
-	#for isspass in passes:
-	#	print "start: %s" % isspass[0]
-	#	print "max: %s" % isspass[1]
-	#	print "end: %s" % isspass[2]
-	#	print "start dir: %s" % isspass[3]
-	#	print "max dir: %s" % isspass[4]
-	#	print "end dir: %s" % isspass[5]
-	#	print "start unix: %s" % isspass[6]
-	#	print "max unix : %s" % isspass[7]
-	#	print "end unix: %s" % isspass[8]
-	#	print "mag?: %s" % isspass[9]
-
 	try:
 		if (passes[-1][6]<currenttime): #is the last entry in the deque in the past?
 			return(True)
@@ -237,6 +189,21 @@ def passes_too_old(passes): #checks the age of the passes returns false if we're
 		return(False)
 
 
+incomingPort = 1337
+remotePort = 1337
+# A UDP server listening for packets on port 1337:
+UDPSock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+listen_addr = ("",incomingPort)
+UDPSock.bind(listen_addr)
+
+# Global Vars.
+lat = 0
+lon = 0
+timezone = tz.tzlocal() #changed as soon as a lookup occurs
+
+last_html_get_unix_time = 0
+html_cooldown_time = 86400 #24 hrs
+
 try:
 
 	logging.basicConfig(filename='ISS.log',level=logging.DEBUG)
@@ -244,43 +211,22 @@ try:
 	print 'Started @ %s' %(ctime())
 	logging.info(str(ctime()) + ': Started')
 
-
-
-
 	DST = localtime().tm_isdst
 	if DST:
 		print 'Daylight savings is active'
 	else:
 		print 'Daylight savings is inactive'
 
-
-	#currenttime = int(time())
-	#DEBUG MODE:
-	#currenttime = 1383691015
-
-	#visiblepasses = refresh_passes(True,56.0,10.0)
-	#regularpasses = refresh_passes(False,56.0,10.0)
-
-	#last_html_get_unix_time = currenttime #last time was NOW!
-
-
 	print "Ready and waiting for inbound on port: %s"%incomingPort
 	logging.info('Listening on port: '+str(incomingPort))
 
-	#print "next visible pass: %s" %next_visible_pass
-	#print
-	#print "next regular pass: %s" %next_regular_pass
-	#print
-	#print "next pass: %s" %next_pass
 	while True:
 
 		# Report on all data packets received and
-		# where they came from in each case (as this is
-		# UDP, each may be from a different source and it's
-		# up to the server to sort this out!)
+		# where they came from in each case (as this is UDP, each may be from a different source and it's up to the server to sort this out!)
+
 		data,addr = UDPSock.recvfrom(1024)
 		remoteIP=IP(addr[0]).strNormal() #convert address of packet origin to string
-		#print data.strip(),addr
 
 		logging.info(str(ctime()) + ': RX: \"' + str(data.rstrip('\n')) + '\" from ' + str(remoteIP))
 		print
@@ -290,15 +236,14 @@ try:
 		print ' Timezone: %s' %timezone
 		print
 
-
 		gi = GeoIP.open("GeoLiteCity.dat", GeoIP.GEOIP_STANDARD) #get your own at http://dev.maxmind.com/geoip/legacy/geolite/
-		gir = gi.record_by_addr(remoteIP)
+
+		#gir = gi.record_by_addr(remoteIP)
+		gir = gi.record_by_addr('90.185.22.109')
 
 		lat=gir['latitude']
 		lon=gir['longitude']
 		timezone=gir['time_zone']
-
-
 
 		currenttime = int(time()) #Update time
 		DST = localtime().tm_isdst #Update DST byte
@@ -320,13 +265,13 @@ try:
 			quarantine=False
 			print "Quarantine inactive. Everything is normal...  EVERYTHING!"
 			print
-			logging.info(str(ctime()) + ': Quarantine NOT active.')
+			logging.info('Quarantine NOT active.')
 		else:
 			quarantine=True
 			seconds_to_lift=html_cooldown_time-(currenttime-last_html_get_unix_time)
 			unixtime_at_lift=localtime(currenttime+seconds_to_lift)
 			#print "unixtime_at_lift: %s"%unixtime_at_lift
-			logging.info(str(ctime()) + ': Quarantine active.')
+			logging.info('Quarantine active.')
 			print "Quarantine ACTIVE, here be dragons. normal operations will resume in %s seconds @ %s"%(seconds_to_lift, strftime('%d/%m %H:%M:%S',unixtime_at_lift))
 			print
 
@@ -334,26 +279,25 @@ try:
 		if (quarantine is False):
 
 			if passes_too_old(visiblepasses):
-				logging.info(str(ctime()) + ': Refreshing visible passes.')
+				logging.info('Refreshing visible passes.')
 				print "Visible pass list for %s outdated, refreshing..." %(remoteIP)
 				visiblepasses.clear()
 				visiblepasses=refresh_passes(True)
 				last_html_get_unix_time=currenttime
 
 			if passes_too_old(regularpasses):
-				logging.info(str(ctime()) + ': Refreshing regular passes.')
+				logging.info('Refreshing regular passes.')
 				print "Regular pass list for %s outdated, refreshing..." &(remoteIP)
 				regularpasses.clear()
 				regularpasses=refresh_passes(False)
 				last_html_get_unix_time=currenttime
-
 		else:
 			if passes_too_old(visiblepasses):
-				logging.warning(str(ctime()) + ': Ran out of visible passes before end of quarantine.')
+				logging.warning('Ran out of visible passes before end of quarantine.')
 				print "Visible pass data outdated (or empty). But not enough time has passed since last get from heavens-above.com"
 				visiblepasses.clear()
 			if passes_too_old(regularpasses):
-				logging.warning(str(ctime()) + ': Ran out of regular passes before end of quarantine.')
+				logging.warning('Ran out of regular passes before end of quarantine.')
 				print "Regular pass data outdated (or empty). But not enough time has passed since last get from heavens-above.com"
 				regularpasses.clear()
 			#this means that there will be no data in the deque, and that the bad data string will be sent if asked.
@@ -369,19 +313,15 @@ try:
 				next_pass = which_pass_is_next(next_visible_pass,next_regular_pass)
 
 				print 'The next pass of the ISS above %s, %s is:' % (lat,lon)
-
 				#next_pass[9] is magnitude, which is 'None' if it's not a visible pass...
-
 				if next_pass[9] is None:
 					print "Not visible, and will start in %s seconds @ %s" %(next_pass[6]-currenttime, next_pass[0].strftime('%d/%m %H:%M:%S'))
 					MESSAGE='R\0%s\0%s\0%s\0%s\0%s\0%s\0%s' % (DST, next_pass[6],next_pass[3],next_pass[7],next_pass[4],next_pass[8],next_pass[5])
-					logging.info(str(ctime()) + ': TX: R' + str(DST) + str(next_pass[6]) + str(next_pass[3]) + str(next_pass[7]) + str(next_pass[4]) + str(next_pass[8]) + str(next_pass[5]))
-
-
+					logging.info('TX: R' + str(DST) + str(next_pass[6]) + str(next_pass[3]) + str(next_pass[7]) + str(next_pass[4]) + str(next_pass[8]) + str(next_pass[5]))
 				else:
 					print "VISIBLE! It will start in %s seconds @ %s" %(next_pass[6]-currenttime, next_pass[0].strftime('%d/%m %H:%M:%S'))
 					MESSAGE='V\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s' % (DST, next_pass[9], next_pass[6],next_pass[3],next_pass[7],next_pass[4],next_pass[8],next_pass[5])
-					logging.info(str(ctime()) + ': TX: V' + str(DST) + str(next_pass[9]) + str(next_pass[6]) + str(next_pass[3]) + str(next_pass[7]) + str(next_pass[4]) + str(next_pass[8]) + str(next_pass[5]))
+					logging.info('TX: V' + str(DST) + str(next_pass[9]) + str(next_pass[6]) + str(next_pass[3]) + str(next_pass[7]) + str(next_pass[4]) + str(next_pass[8]) + str(next_pass[5]))
 					#	return (start, max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, mag)
 					#			  0     1    2     3     4     5        6        7        8      9
 					#	(DST, V_mag, V_startUnix, V_loc1, V_maxUnix, V_loc2, V_endUnix, V_loc3)
@@ -391,7 +331,7 @@ try:
 
 			except:
 				MESSAGE='fail at this end, sorry'
-				logging.warning(str(ctime()) + ': parsing of data failed.')
+				logging.warning('parsing of data failed.')
 
 			UDPSock.sendto(MESSAGE, (remoteIP, remotePort))
 			print
