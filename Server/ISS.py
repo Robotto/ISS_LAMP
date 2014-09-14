@@ -221,7 +221,10 @@ try:
 		# Report on all data packets received and
 		# where they came from in each case (as this is UDP, each may be from a different source and it's up to the server to sort this out!)
 
+		#recvfrom waits for incoming data:
 		data,addr = UDPSock.recvfrom(1024)
+
+
 		remoteIP=IP(addr[0]).strNormal() #convert address of packet origin to string
 
 		logging.info(str(ctime()) + ': RX: \"' + str(data.rstrip('\n')) + '\" from ' + str(remoteIP))
@@ -245,7 +248,7 @@ try:
 		DST = localtime().tm_isdst #Update DST byte
 
 		if last_html_get_unix_time==0: #if passes have never been recieved = first run.
-			logging.info(str(ctime()) + ': Retrieving passes.')
+			logging.info('Retrieving passes.')
 			visiblepasses = refresh_passes(True)
 			regularpasses = refresh_passes(False)
 			firstIP=remoteIP
@@ -254,7 +257,7 @@ try:
 		if remoteIP!=firstIP:
 			print '     WARNING:     '
 			print '     Change of client IP address. Pass data most likely invalid!!     '
-			logging.warning(str(ctime()) + ': Change of client IP address. Pass data most likely invalid!!')
+			logging.warning('Change of client IP address. Pass data most likely invalid!!')
 
 		#check the age of the passes, refresh them if neccesary, but only if quarantine isn't set:
 		if currenttime>last_html_get_unix_time+html_cooldown_time:
@@ -334,6 +337,7 @@ try:
 			print ' TX: %s' % (MESSAGE)
 			print
 			print
+
 except Exception as e:
     print "An error occurred, here's a thing: " + str(e)
     logging.warning(str(ctime()) + ': Fatal failure! Error message:')
