@@ -140,9 +140,7 @@ def rowparser(row):
 	loc3 = '%s-%s' % (az3, alt3)
 
 	(start,startUnix) = maketime(dStr,t1Str)
-
 	(max,maxUnix) = maketime(dStr,t2Str)
-
 	(end,endUnix) = maketime(dStr,t3Str)
 
 	return (start, max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, mag)
@@ -155,15 +153,13 @@ def maketime(dStr,timestring):
 	from_zone = tz.tzutc()
 	to_zone = tz.gettz(timezone) #determined from the IP of the source of the request
 
-	#START
 	string = '%s %s %s' % (dStr, date.today().year, timestring) #this will break if next pass is in next calendar year.
-	utc = datetime(*strptime(string, '%d %b %Y %H:%M:%S')[0:7])
-	utc = utc.replace(tzinfo=from_zone)
+	dt = datetime(*strptime(string, '%d %b %Y %H:%M:%S')[0:7])
+	utc = dt.replace(tzinfo=from_zone)
 	local_time = utc.astimezone(to_zone) #in local time from here - local time for whoever is doing the lookup
 	unix_time =int(mktime(local_time.timetuple()))
 
 	return(local_time,unix_time)
-
 
 def getnextpass(passes): #returns the next future pass
 	for isspass in passes:
