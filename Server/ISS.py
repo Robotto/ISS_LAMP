@@ -286,8 +286,7 @@ try:
 			regular_quarantine=True
 			seconds_to_lift=html_cooldown_time-(currenttime-last_regular_get_unix_time)
 			unixtime_at_lift=localtime(currenttime+seconds_to_lift)
-			#print "unixtime_at_lift: %s"%unixtime_at_lift
-			logging.info('Quarantine for regular passesactive.')
+			logging.info('Visible pass quarantine active.')
 			print "Quarantine for regilar passes ACTIVE, here be dragons. normal operations will resume in %s seconds @ %s"%(seconds_to_lift, strftime('%d/%m %H:%M:%S',unixtime_at_lift))
 			print
 
