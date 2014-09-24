@@ -197,7 +197,9 @@ lat = 0
 lon = 0
 timezone = tz.tzlocal() #changed as soon as a lookup occurs
 
-last_html_get_unix_time = 0
+#last_html_get_unix_time = 0
+last_visible_get_unix_time = 0
+last_regular_get_unix_time = 0
 html_cooldown_time = 86400 #24 hrs
 
 try:
@@ -228,6 +230,15 @@ try:
 		remoteIP=IP(addr[0]).strNormal() #convert address of packet origin to string
 
 		logging.info(str(ctime()) + ': RX: \"' + str(data.rstrip('\n')) + '\" from ' + str(remoteIP))
+
+		gi = GeoIP.open("GeoLiteCity.dat", GeoIP.GEOIP_STANDARD) #get your own at http://dev.maxmind.com/geoip/legacy/geolite/
+
+		gir = gi.record_by_addr(remoteIP)
+
+		lat=gir['latitude']
+		lon=gir['longitude']
+		timezone=gir['time_zone']
+
 		print
 		print ' RX: "%s" @ %s from %s' % (data.rstrip('\n'), ctime(), remoteIP)
 		print ' Latitude: %s' %lat
@@ -235,24 +246,17 @@ try:
 		print ' Timezone: %s' %timezone
 		print
 
-		gi = GeoIP.open("GeoLiteCity.dat", GeoIP.GEOIP_STANDARD) #get your own at http://dev.maxmind.com/geoip/legacy/geolite/
-
-		#gir = gi.record_by_addr(remoteIP)
-		gir = gi.record_by_addr('90.185.22.109')
-
-		lat=gir['latitude']
-		lon=gir['longitude']
-		timezone=gir['time_zone']
-
 		currenttime = int(time()) #Update time
 		DST = localtime().tm_isdst #Update DST byte
 
-		if last_html_get_unix_time==0: #if passes have never been recieved = first run.
+		if last_visible_get_unix_time==0: #if passes have never been recieved = first run.
+		#if last_regular_get_unix_time==0: #if passes have never been recieved = first run.
 			logging.info('Retrieving passes.')
 			visiblepasses = refresh_passes(True)
 			regularpasses = refresh_passes(False)
 			firstIP=remoteIP
-			last_html_get_unix_time=currenttime
+			last_visible_get_unix_time=currenttime
+			last_regular_get_unix_time=currenttime
 
 		if remoteIP!=firstIP:
 			print '     WARNING:     '
@@ -260,41 +264,55 @@ try:
 			logging.warning('Change of client IP address. Pass data most likely invalid!!')
 
 		#check the age of the passes, refresh them if neccesary, but only if quarantine isn't set:
-		if currenttime>last_html_get_unix_time+html_cooldown_time:
-			quarantine=False
-			print "Quarantine inactive. Everything is normal...  EVERYTHING!"
+		if currenttime>last_visible_get_unix_time+html_cooldown_time:
+			visible_quarantine=False
+			print "Quarantine for visible passes inactive."
 			print
-			logging.info('Quarantine NOT active.')
+			logging.info('Visible passes quarantine NOT active.')
 		else:
-			quarantine=True
-			seconds_to_lift=html_cooldown_time-(currenttime-last_html_get_unix_time)
+			visible_quarantine=True
+			seconds_to_lift=html_cooldown_time-(currenttime-last_visible_get_unix_time)
+			unixtime_at_lift=localtime(currenttime+seconds_to_lift)
+			logging.info('Visible pass quarantine active.')
+			print "Quarantine for visible passes ACTIVE, here be dragons. normal operations will resume in %s seconds @ %s"%(seconds_to_lift, strftime('%d/%m %H:%M:%S',unixtime_at_lift))
+			print
+
+		if currenttime>last_regular_get_unix_time+html_cooldown_time:
+			regular_quarantine=False
+			print "Quarantine for regular passes inactive."
+			print
+			logging.info('Regular passes quarantine NOT active.')
+		else:
+			regular_quarantine=True
+			seconds_to_lift=html_cooldown_time-(currenttime-last_regular_get_unix_time)
 			unixtime_at_lift=localtime(currenttime+seconds_to_lift)
 			#print "unixtime_at_lift: %s"%unixtime_at_lift
-			logging.info('Quarantine active.')
-			print "Quarantine ACTIVE, here be dragons. normal operations will resume in %s seconds @ %s"%(seconds_to_lift, strftime('%d/%m %H:%M:%S',unixtime_at_lift))
+			logging.info('Quarantine for regular passesactive.')
+			print "Quarantine for regilar passes ACTIVE, here be dragons. normal operations will resume in %s seconds @ %s"%(seconds_to_lift, strftime('%d/%m %H:%M:%S',unixtime_at_lift))
 			print
 
 
-		if (quarantine is False):
-
+		if (visible_quarantine is False):
 			if passes_too_old(visiblepasses):
 				logging.info('Refreshing visible passes.')
 				print "Visible pass list for %s outdated, refreshing..." %(remoteIP)
 				visiblepasses.clear()
 				visiblepasses=refresh_passes(True)
-				last_html_get_unix_time=currenttime
-
-			if passes_too_old(regularpasses):
-				logging.info('Refreshing regular passes.')
-				print "Regular pass list for %s outdated, refreshing..." &(remoteIP)
-				regularpasses.clear()
-				regularpasses=refresh_passes(False)
-				last_html_get_unix_time=currenttime
+				last_visible_get_unix_time=currenttime
 		else:
 			if passes_too_old(visiblepasses):
 				logging.warning('Ran out of visible passes before end of quarantine.')
 				print "Visible pass data outdated (or empty). But not enough time has passed since last get from heavens-above.com"
 				visiblepasses.clear()
+
+		if (regular_quarantine is False):
+			if passes_too_old(regularpasses):
+				logging.info('Refreshing regular passes.')
+				print "Regular pass list for %s outdated, refreshing..." %(remoteIP)
+				regularpasses.clear()
+				regularpasses=refresh_passes(False)
+				last_regular_get_unix_time=currenttime
+		else:
 			if passes_too_old(regularpasses):
 				logging.warning('Ran out of regular passes before end of quarantine.')
 				print "Regular pass data outdated (or empty). But not enough time has passed since last get from heavens-above.com"
