@@ -268,7 +268,7 @@ try:
 			visible_quarantine=False
 			print "Quarantine for visible passes inactive."
 			print
-			logging.info('Visible passes quarantine NOT active.')
+			#logging.info('Visible passes quarantine NOT active.')
 		else:
 			visible_quarantine=True
 			seconds_to_lift=html_cooldown_time-(currenttime-last_visible_get_unix_time)
@@ -281,7 +281,7 @@ try:
 			regular_quarantine=False
 			print "Quarantine for regular passes inactive."
 			print
-			logging.info('Regular passes quarantine NOT active.')
+			#logging.info('Regular passes quarantine NOT active.')
 		else:
 			regular_quarantine=True
 			seconds_to_lift=html_cooldown_time-(currenttime-last_regular_get_unix_time)
@@ -331,13 +331,16 @@ try:
 				print 'The next pass of the ISS above %s, %s is:' % (lat,lon)
 				#next_pass[9] is magnitude, which is 'None' if it's not a visible pass...
 				if next_pass[9] is None:
+
 					print "Not visible, and will start in %s seconds @ %s" %(next_pass[6]-currenttime, next_pass[0].strftime('%d/%m %H:%M:%S'))
-					MESSAGE='R\0%s\0%s\0%s\0%s\0%s\0%s\0%s' % (DST, next_pass[6],next_pass[3],next_pass[7],next_pass[4],next_pass[8],next_pass[5])
+					logging.info('Next pass is visible and will occur at'+next_pass[0].strftime('%d/%m %H:%M:%S'))
 					logging.info('TX: R' + str(DST) + str(next_pass[6]) + str(next_pass[3]) + str(next_pass[7]) + str(next_pass[4]) + str(next_pass[8]) + str(next_pass[5]))
+					MESSAGE='R\0%s\0%s\0%s\0%s\0%s\0%s\0%s' % (DST, next_pass[6],next_pass[3],next_pass[7],next_pass[4],next_pass[8],next_pass[5])
 				else:
 					print "VISIBLE! It will start in %s seconds @ %s" %(next_pass[6]-currenttime, next_pass[0].strftime('%d/%m %H:%M:%S'))
-					MESSAGE='V\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s' % (DST, next_pass[9], next_pass[6],next_pass[3],next_pass[7],next_pass[4],next_pass[8],next_pass[5])
+					logging.info('Next pass is not visible and will occur at'+ext_pass[0].strftime('%d/%m %H:%M:%S'))
 					logging.info('TX: V' + str(DST) + str(next_pass[9]) + str(next_pass[6]) + str(next_pass[3]) + str(next_pass[7]) + str(next_pass[4]) + str(next_pass[8]) + str(next_pass[5]))
+					MESSAGE='V\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s' % (DST, next_pass[9], next_pass[6],next_pass[3],next_pass[7],next_pass[4],next_pass[8],next_pass[5])
 					#	return (start, max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, mag)
 					#			  0     1    2     3     4     5        6        7        8      9
 					#	(DST, V_mag, V_startUnix, V_loc1, V_maxUnix, V_loc2, V_endUnix, V_loc3)
