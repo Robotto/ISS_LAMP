@@ -34,7 +34,7 @@ EthernetUDP Udp; // A UDP instance to let us send and receive packets over UDP
 
 //UDP (robottobox) stuff:
 const unsigned int localPort = 1337;      // local port to listen for UDP packets
-const int NTP_PACKET_SIZE = 128; // Ntemp_vfd_positiontemp_vfd_positionTP time stamp is in the first 48 bytes of the message
+const int NTP_PACKET_SIZE = 128; // NTP time stamp is in the first 48 bytes of the message
 byte packetBuffer[ NTP_PACKET_SIZE ]; //buffer to hold incoming and outgoing packets
 int UDPretryDelay = 0;
 int UDPretries = 0;
@@ -112,14 +112,25 @@ void setup() {
 
     VFD.begin();
 
-    VFD.sendString("Power OK.");
+
+    VFD.sendString("Reactor online ");
+    delay(500);
+    VFD.sendString("Sensors online "):
+    delay(500);
+    VFD.sendString("Weapons online");
+    delay(500);
+    VFD.clear();
+    VFD.sendString("All systems nominal...");
+    delay(1000);
+    VFD.clear();
 
     PWM_ramp(true);
-
+    VFD.sendString("Establishing ethernet connection...");
 
     // start the Ethernet connection:
     if (Ethernet.begin(mac) == 0)
     {
+    	VFD.clear();
         VFD.sendString("Failed to configure Ethernet using DHCP!");
         PWM_ramp(false);
         while(1); //dead end.
@@ -563,7 +574,28 @@ I::::::::IS:::::::::::::::SS S:::::::::::::::SS      R::::::R     R:::::RX:::::X
 IIIIIIIIII SSSSSSSSSSSSSSS    SSSSSSSSSSSSSSS        RRRRRRRR     RRRRRRRXXXXXXX       XXXXXXX
 */
 
-// V \ 1 \ -2.8 \ 1406937446 \ SSE-37 \ 1406937446 \ SSE-37 \ 1406851222 \ ESE-10
+//		The recieved string is formatted as follows: Each '\' represents a null byte (0b00000000)
+//
+// 		 V \ 1 \ -2.8 \ 1406937446 \ SSE-37 \ 1406937446 \ SSE-37 \ 1406851222 \ ESE-10
+//		 |   |     |        |          |         |           |          |          |
+//		 |   |     |        |          |         |           |          |          Direction at pass end.
+//		 |   |     |        |          |         |           |          |
+//		 |   |     |        |          |         |           |          Unix time at pass end.
+//		 |   |     |        |          |         |           |
+//		 |   |     |        |          |         |           Direction at pass maximum.
+//		 |   |     |        |          |         |
+//		 |   |     |        |          |         Unix time at pass maximum.
+//		 |   |     |        |          |
+//		 |   |     |        |          Direction at pass start.
+//		 |   |     |        |
+//		 |   |     |        Unix time at pass start.
+//		 |   |     |
+//		 |   |     Pass magnitude.
+//		 |   |
+//		 |   Daylight savings time: Assigns value to the 'DST' bool: 0=false, 1=true
+//		 |
+//		 Visibility: assigns value to the 'passVisible' bool: V=true, R=false
+
 
 void handle_ISS_udp()
 {
@@ -582,7 +614,9 @@ else if (packetBuffer[0]=='R') passVisible=false; //stringcount=6; //REGULAR PAS
 
 else
   {
+  VFD.clear();
   VFD.sendString("Bad data from robottobox, aborting :(");
+  delay(1500);
   errorclock();
   }
 
@@ -620,7 +654,7 @@ else
   }
     //START TIME:
 
-    String((char *)startp).toCharArray(Epoch_TEMP, 11) ;
+    String((char *)startp).toCharArray(Epoch_TEMP, 11) ; //these will break when the epoch gains another digit (in ~272 years)
     passStartEpoch=(unsigned long)atol(Epoch_TEMP);
 
 
