@@ -39,6 +39,19 @@ byte packetBuffer[ NTP_PACKET_SIZE ]; //buffer to hold incoming and outgoing pac
 int UDPretryDelay = 0;
 int UDPretries = 0;
 
+//States enum:
+enum pass_states { //default state should be "get_data"
+	get_data,
+	display_setup,
+	countdown,
+	regular_start,
+	regular_underway,
+	visible_start,
+	visible_before_max,
+	print_end_info,
+	visible_after_max,
+	end_of_pass
+};
 
 //Timekeeper stuff:
 boolean DST = false; //Daylight savings? (summertime)
@@ -66,8 +79,6 @@ String passStartDir;
 String passMaxDir;
 String passEndDir;
 
-//Statemachine state indicator:
-unsigned int state=0;
 
 //hardware setup:
 int PWM_PIN=9;
@@ -77,7 +88,6 @@ VFD VFD(A0,A1,A2,A3,A4,A5,1,0,7,6,5,4,3,2);
 
 int temp_vfd_position = 0;
 String displaybuffer="  ";
-
 
 
 
@@ -115,7 +125,7 @@ void setup() {
 
     VFD.sendString("Reactor online ");
     delay(500);
-    VFD.sendString("Sensors online "):
+    VFD.sendString("Sensors online ");
     delay(500);
     VFD.sendString("Weapons online");
     delay(500);
@@ -214,11 +224,15 @@ LLLLLLLLLLLLLLLLLLLLLLLL   ooooooooooo      ooooooooooo    p::::::pppppppp
 void loop()
 {
 
+enum pass_states pass_state; //init the enum with the pass states.
+
 timekeeper();
 
-switch(state)
+switch(pass_state)
   {
-  case 0:
+
+
+  case get_data:
         sendISSpacket(robottobox); //ask robottobox for new iss data
         VFD.sendString("ISS TX -> Robottobox");
         UDPwait(true);
@@ -226,18 +240,18 @@ switch(state)
         VFD.sendString("  ISS RX!!");
         handle_ISS_udp();
 
-        state=1;
+        pass_state=display_setup;
         break;
 
-  case 1:
+  case display_setup:
         VFD.clear();
         if (passVisible) VFD.sendString("Visible pass T-LOADING          LOADING"); //15
         else VFD.sendString("Regular pass    T-LOADING        LOADING");
 
-        state=2;
+        pass_state=countdown;
         break;
 
-  case 2:       //probably could be called default state..
+  case countdown:       //probably could be called default state..
 
         if(passVisible) VFD.setPos(15); //right after T-
         else VFD.setPos(18);
@@ -257,27 +271,27 @@ switch(state)
 
         if(currentEpoch>=passStartEpoch)
             {
-                if(!passVisible) state=3;
-                else state=5;
+                if(!passVisible) pass_state=regular_start;
+                else pass_state=visible_start;
             }
         break;
 
-  case 3: //regular pass start
+  case regular_start: //regular pass start
         VFD.clear();
         VFD.sendString("Non-visible pass in progress.");
         PWM_ramp(true); //lights fade on
         //MAYBE ADD COUNTDOWN?
 
-        state=4;
+        pass_state=regular_underway;
         break;
 
-  case 4: //regular pass in progress
+  case regular_underway: //regular pass in progress
         clock();
 
-        if(currentEpoch>=passEndEpoch) state=8;
+        if(currentEpoch>=passEndEpoch) pass_state=end_of_pass;
         break;
 
-  case 5: //visible pass start
+  case visible_start: //visible pass start
         VFD.clear();
         VFD.scrollMode(true);
         VFD.sendString("VISIBLE PASS STARTING!");
@@ -295,44 +309,44 @@ switch(state)
         VFD.sendString(displaybuffer);
         temp_vfd_position=displaybuffer.length();
 
-        state = 6;
+        pass_state = visible_before_max;
         break;
 
-  case 6: //visible pass countdown to max
+  case visible_before_max: //visible pass countdown to max
         VFD.setPos(temp_vfd_position);
         displaybuffer=String(int(passMaxEpoch-currentEpoch)) + " seconds"; //create a printable string from the time until pass max
         for(int i=DISPLAY_SIZE-(temp_vfd_position+displaybuffer.length());i>0;i--) displaybuffer+=" "; //append spaces to the string to match size of display
         VFD.sendString(displaybuffer);
 
-        if(currentEpoch>=passMaxEpoch) state=7;
+        if(currentEpoch>=passMaxEpoch) pass_state=print_end_info;
         break;
 
-  case 7: //visible pass print end info
+  case print_end_info: //visible pass print end info
         VFD.clear();
         displaybuffer = "Visible pass end @" + passEndDir + " in ";
         VFD.sendString(displaybuffer);
         temp_vfd_position=displaybuffer.length();
 
-        state=8;
+        pass_state=visible_after_max;
         break;
 
-  case 8: //visible pass countdown to end
+  case visible_after_max: //visible pass countdown to end
         VFD.setPos(temp_vfd_position);
         displaybuffer=String(int(passEndEpoch-currentEpoch)) + " seconds"; //create a printable string from the time until pass end
         for(int i=DISPLAY_SIZE-(temp_vfd_position+displaybuffer.length());i>0;i--) displaybuffer+=" "; //append spaces to the string to match size of display
         VFD.sendString(displaybuffer);
 
-        if (currentEpoch>=passEndEpoch) state=9;
+        if (currentEpoch>=passEndEpoch) pass_state=end_of_pass;
         break;
 
-  case 9: //pass ended
+  case end_of_pass: //pass ended
         VFD.clear();
         VFD.sendString("End of pass.");
         PWM_ramp(false); //lights fade off
         VFD.clear();
         delay(1000);
 
-        state = 0;
+        pass_state = get_data;
         break;
   }
 
