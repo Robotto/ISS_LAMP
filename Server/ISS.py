@@ -104,13 +104,16 @@ def html_to_rows(html):
 
 def rows_to_sets(Rows):	#calls the rowparser for all the available rows, returns a set of passes.
 
-	passes = collections.deque(maxlen=50) #magic number...
+	#passes = collections.deque(maxlen=50) #magic number...
+	passes = collections.deque()
 
 	for row in Rows:
+		#print row
 		(start, max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, mag) = rowparser(row)
 			##insert age check here?
 		passes.append([start,max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, mag])
 
+	#print passes
 	return (passes)
 
 
@@ -143,6 +146,8 @@ def rowparser(row):
 	(max,maxUnix) = maketime(dStr,t2Str)
 	(end,endUnix) = maketime(dStr,t3Str)
 
+	#print (start, max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, mag)
+
 	return (start, max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, mag)
 #			  0     1    2    3     4     5         6        7        8      9
 #													^-The magic happens here.
@@ -163,6 +168,7 @@ def maketime(dStr,timestring):
 
 def getnextpass(passes): #returns the next future pass
 	for isspass in passes:
+		#print isspass
 		if isspass[6]>currenttime:
 			return(isspass)
 
@@ -177,13 +183,16 @@ def which_pass_is_next(visible,regular): #determines whether the next visible or
 
 def passes_too_old(passes): #checks the age of the passes returns false if we're still good.
 	try:
-		if (passes[-1][6]<currenttime): #is the last entry in the deque in the past?
-			return(True)
+		for isspass in passes:
+		#print isspass
+			if isspass[6]>currenttime: #check starttime for passes in the list
+				return(False)
+
+		return(True)
+		#if (passes[-1][6]<currenttime): #is the last entry in the deque in the past?
+		#	return(True)
 	except IndexError:  #No data exists.. that's kind of too old... right?
 			return(True)
-	else:
-		return(False)
-
 
 incomingPort = 1337
 remotePort = 1337
@@ -249,8 +258,7 @@ try:
 		currenttime = int(time()) #Update time
 		DST = localtime().tm_isdst #Update DST byte
 
-		if last_visible_get_unix_time==0: #if passes have never been recieved = first run.
-		#if last_regular_get_unix_time==0: #if passes have never been recieved = first run.
+		if last_visible_get_unix_time==0: #if passes have never been recieved = first run
 			logging.info('Retrieving passes.')
 			visiblepasses = refresh_passes(True)
 			regularpasses = refresh_passes(False)
@@ -287,7 +295,7 @@ try:
 			seconds_to_lift=html_cooldown_time-(currenttime-last_regular_get_unix_time)
 			unixtime_at_lift=localtime(currenttime+seconds_to_lift)
 			logging.info('Regular pass quarantine active.')
-			print "Quarantine for regilar passes ACTIVE, here be dragons. normal operations will resume in %s seconds @ %s"%(seconds_to_lift, strftime('%d/%m %H:%M:%S',unixtime_at_lift))
+			print "Quarantine for regular passes ACTIVE, here be dragons. normal operations will resume in %s seconds @ %s"%(seconds_to_lift, strftime('%d/%m %H:%M:%S',unixtime_at_lift))
 			print
 
 
@@ -302,6 +310,7 @@ try:
 			if passes_too_old(visiblepasses):
 				logging.warning('Ran out of visible passes before end of quarantine.')
 				print "Visible pass data outdated (or empty). But not enough time has passed since last get from heavens-above.com"
+				#print visiblepasses
 				visiblepasses.clear()
 
 		if (regular_quarantine is False):
@@ -315,6 +324,7 @@ try:
 			if passes_too_old(regularpasses):
 				logging.warning('Ran out of regular passes before end of quarantine.')
 				print "Regular pass data outdated (or empty). But not enough time has passed since last get from heavens-above.com"
+				#print regularpasses
 				regularpasses.clear()
 			#this means that there will be no data in the deque, and that the bad data string will be sent if asked.
 
