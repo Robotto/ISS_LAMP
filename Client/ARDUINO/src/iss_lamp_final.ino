@@ -135,10 +135,9 @@ void setup() {
     delay(500);
     VFD.clear();
     VFD.sendString("All systems nominal...");
-    delay(1000);
-    VFD.clear();
-
+    //delay(1000);
     PWM_ramp(true);
+    VFD.clear();
     VFD.sendString("Establishing ethernet connection...");
 
     // start the Ethernet connection:
@@ -246,8 +245,16 @@ switch(pass_state)
 
   case display_setup:
         VFD.clear();
-        if (passVisible) VFD.sendString("Visible pass T-LOADING          LOADING"); //15
-        else VFD.sendString("Regular pass    T-LOADING        LOADING");
+        if (passVisible)
+        	{
+        		VFD.sendString("Visible pass T-"); //15
+        		VFD.flashyString("LOADING          LOADING");
+        	}
+        else
+			{
+				VFD.sendString("Regular pass    T-");
+				VFD.flashyString("LOADING        LOADING");
+			}
 
         pass_state=countdown;
         break;
@@ -683,8 +690,9 @@ else
 
     //PRINT
     VFD.sendString("Next pass start direction: ");
-    VFD.sendString(passStartDir);
-    delay(1000);
+    VFD.flashyString(passStartDir);
+    //VFD.sendString(passStartDir);
+    delay(2000);
     VFD.clear();
 
 
@@ -702,11 +710,12 @@ else
     passMaxDir=String((char *)startp);
 
     //PRINT:
+    /*
     VFD.sendString("Next pass MAX direction: ");
     VFD.sendString(passMaxDir);
     delay(1000);
     VFD.clear();
-
+	*/
 
     while(*startp) startp++; //jump to the next string in the UDP packet
     startp++;
@@ -722,11 +731,12 @@ else
     //END DIR:
     passEndDir=String((char *)startp);
     //PRINT:
+    /*
     VFD.sendString("Next pass END direction: ");
     VFD.sendString(passEndDir);
     delay(1000);
     VFD.clear();
-
+    */
 
     //SECS TO PASS:
     secs_to_next_pass=passStartEpoch-currentEpoch;
