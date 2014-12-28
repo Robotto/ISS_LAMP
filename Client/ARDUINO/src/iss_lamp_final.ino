@@ -53,6 +53,8 @@ enum pass_states { //default state should be "get_data"
 	end_of_pass
 };
 
+pass_states pass_state; //init the enum with the pass states.
+
 //Timekeeper stuff:
 boolean DST = false; //Daylight savings? (summertime)
 int GMT_plus = 1; //timezone offset from GMT - it should be possible to get the GMT offset from the server since it does geolocation anyways... hmm... nah.
@@ -123,11 +125,13 @@ void setup() {
     VFD.begin();
 
 
-    VFD.sendString("Reactor online ");
+    VFD.sendString("Reactor online.");
     delay(500);
-    VFD.sendString("Sensors online ");
+    VFD.clear();
+    VFD.sendString("Sensors online.");
     delay(500);
-    VFD.sendString("Weapons online");
+    VFD.clear();
+    VFD.sendString("Weapons online.");
     delay(500);
     VFD.clear();
     VFD.sendString("All systems nominal...");
@@ -193,6 +197,8 @@ void setup() {
 
     //PWM_ramp(false); //lights ramp down
     digitalWrite(PWM_PIN,true);
+
+    pass_state=get_data;
 }
 
 
@@ -224,14 +230,10 @@ LLLLLLLLLLLLLLLLLLLLLLLL   ooooooooooo      ooooooooooo    p::::::pppppppp
 void loop()
 {
 
-enum pass_states pass_state; //init the enum with the pass states.
-
 timekeeper();
 
 switch(pass_state)
   {
-
-
   case get_data:
         sendISSpacket(robottobox); //ask robottobox for new iss data
         VFD.sendString("ISS TX -> Robottobox");
@@ -239,7 +241,6 @@ switch(pass_state)
         delay(500);
         VFD.sendString("  ISS RX!!");
         handle_ISS_udp();
-
         pass_state=display_setup;
         break;
 
@@ -346,7 +347,7 @@ switch(pass_state)
         VFD.clear();
         delay(1000);
 
-        pass_state = get_data;
+        pass_state=get_data;
         break;
   }
 
@@ -681,8 +682,8 @@ else
     passStartDir=String((char *)startp);
 
     //PRINT
-    displaybuffer="Next pass start direction: "+passStartDir;
-    VFD.sendString(displaybuffer);
+    VFD.sendString("Next pass start direction: ");
+    VFD.sendString(passStartDir);
     delay(1000);
     VFD.clear();
 
@@ -701,8 +702,8 @@ else
     passMaxDir=String((char *)startp);
 
     //PRINT:
-    displaybuffer="Next pass MAX direction: "+passMaxDir;
-    VFD.sendString(displaybuffer);
+    VFD.sendString("Next pass MAX direction: ");
+    VFD.sendString(passMaxDir);
     delay(1000);
     VFD.clear();
 
@@ -721,33 +722,37 @@ else
     //END DIR:
     passEndDir=String((char *)startp);
     //PRINT:
-    displaybuffer="Next pass END direction: "+passEndDir;
-    VFD.sendString(displaybuffer);
+    VFD.sendString("Next pass END direction: ");
+    VFD.sendString(passEndDir);
     delay(1000);
     VFD.clear();
 
 
     //SECS TO PASS:
     secs_to_next_pass=passStartEpoch-currentEpoch;
-    displaybuffer="Seconds to next pass: "+String(secs_to_next_pass);
-    VFD.sendString(displaybuffer);
+    VFD.sendString("Seconds to next pass: ");
+    VFD.sendString(String(secs_to_next_pass));
     delay(1500);
     VFD.clear();
 
-    displaybuffer="Duration: "+String((int)(passEndEpoch-passStartEpoch))+" seconds...";
-    VFD.sendString(displaybuffer);
+    VFD.sendString("Duration: ");
+    VFD.sendString(String((int)(passEndEpoch-passStartEpoch)));
+    VFD.sendString(" seconds...");
+
     delay(1500);
     VFD.clear();
 
-    /*
-    displaybuffer="  SECONDS TIL PASS MAX: "+String((int)(passMaxEpoch-currentEpoch));
-    VFD.sendString(displaybuffer);
+/*
+
+    VFD.sendString("  SECONDS TO PASS MAX: ");
+    VFD.sendString(String((int)(passMaxEpoch-currentEpoch)));
+
 
     delay(300);
     VFD.clear();
 
-    displaybuffer="  SECONDS TIL PASS END: "+String((int)(passEndEpoch-currentEpoch));
-    VFD.sendString(displaybuffer);
+    VFD.sendString("  SECONDS TO PASS END: ");
+    VFD.sendString(String((int)(passEndEpoch-currentEpoch)));
 
 
     delay(300);
