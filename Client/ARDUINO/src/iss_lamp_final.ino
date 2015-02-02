@@ -391,7 +391,7 @@ void timekeeper()
     ntp_ip_refresh_seconds++;
     secs_to_next_pass=passStartEpoch-currentEpoch;
 
-    if(timekeeper_standalone_seconds>=30)
+    if(timekeeper_standalone_seconds>=240) //drift seems to be about 5 seconds pr 20 minutes = 1 second in 4 minutes
         {
             sendNTPpacket(timeServer);
             UDPwait(false);
@@ -689,11 +689,14 @@ else
     passStartDir=String((char *)startp);
 
     //PRINT
+    if (passVisible)
+  	{
     VFD.sendString("Next pass start direction: ");
     VFD.flashyString(passStartDir);
     //VFD.sendString(passStartDir);
     delay(2000);
     VFD.clear();
+	}
 
 
     while(*startp) startp++; //jump to the next string in the UDP packet
