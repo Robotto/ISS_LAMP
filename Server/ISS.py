@@ -26,6 +26,7 @@ import socket
 from IPy import IP
 
 def refresh_passes(isvisible):
+	#print "refresh_passes called"
 	html = get_html(isvisible)
 	rows = html_to_rows(html)
 	passes = rows_to_sets(rows)
@@ -42,9 +43,9 @@ def get_html(isvisible):
 	#http://heavens-above.com/PassSummary.aspx?showAll=t&satid=25544&lat=56.156361&lng=10.188631&alt=12&tz=CET
 
 	#VisibleURL = 'http://62.212.66.171/iss/visible.htm'
-	#VisibleURL = 'http://62.212.66.171/iss/visible_but_no_passes.htm'
+	#VisibleURL = 'http://62.212.66.171/iss/visible_no_passes.html'
 
-	#AllURL = 'http://62.212.66.171/iss/regular.htm'
+	#AllURL = 'http://62.212.66.171/iss/all.html'
 	#AllURL = 'http://62.212.66.171/iss/visible_but_no_passes.htm'
 
 	br = mechanize.Browser()
@@ -53,31 +54,43 @@ def get_html(isvisible):
 
 
 	if isvisible:
-		print 'Retrieving list of visible passes'
+		print '	Retrieving list of visible passes'
 		Html = br.open(VisibleURL).read()
 	else:
-		print 'Retrieving list of regular passes'
+		print '	Retrieving list of regular passes'
 		Html = br.open(AllURL).read()
 
 	return(Html)
 
 
 def html_to_rows(html):
+	#print 'html_to_rows called'
 
-	print 'Parsing HTML into data rows...'
+	#print "	raw html:"
+	#print html
 
 		# In the past, Beautiful Soup hasn't been able to parse the Heavens Above HTML.
 		# To get around this problem, we extract just the table of ISS data and set
 		# it in a well-formed HTML skeleton. If there is no table of ISS data, create
 		# an empty table
 	try:
+		print "	trying to split"
 		Table = html.split(r'<table class="standardTable"', 1)[1] #split after first "standard table" tag, return 2nd portion
-		Table = Table.split(r'<tr class="tablehead">', 1)[1] #split after first "tablehead" tag return second portion
-		Table = Table.split(r'<tr class="tablehead">', 1)[1] #split after first "tablehead" tag return second portion , again.
+		#print "Table after first split:"
+		#print Table
+		#Table = Table.split(r'<tr class="tablehead">', 1)[1] #split after first "tablehead" tag return second portion
+		Table = Table.split(r'<thead>', 1)[1] #split after first "tablehead" tag return second portion
+		#print "Table after second split:"
+		#print Table
+		Table = Table.split(r'</thead>', 1)[1] #split after first "tablehead" tag return second portion , again.
 		Table = Table.split(r'</tr>', 1)[1] #split after first "</tr>" tag return second portion
 		Table = Table.split(r'</table>', 1)[0] #split after first "</table>" return first portion
 
+		#print "Table after all splits:"
+		#print Table
+
 	except IndexError:
+		print "	nothing to split, creating empty table.."
 		Table = '<tr><td></td></tr>'
 
 	newHtml = '''<html>
@@ -90,19 +103,22 @@ def html_to_rows(html):
 </body>
 </html>''' % Table
 
+	#print "	created a new html... parsing"
 	# Parse the newly created HTML.
 	Soup = BeautifulSoup(newHtml)
 
 	#Collect only the data rows of the table.
 
+	#print "	creating collection of rows"
 	Rows = Soup.findAll('table')[0].findAll('tr')[0:]
 	#print 'The parsed rows:'
 	#print Rows
-	#print
 
+	#print "	done."
 	return (Rows)
 
 def rows_to_sets(Rows):	#calls the rowparser for all the available rows, returns a set of passes.
+	#print "rows_to_sets called"
 
 	#passes = collections.deque(maxlen=50) #magic number...
 	passes = collections.deque()
@@ -113,46 +129,58 @@ def rows_to_sets(Rows):	#calls the rowparser for all the available rows, returns
 			##insert age check here?
 		passes.append([start,max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, mag])
 
+	#print "passes:"
 	#print passes
+	#print "	done."
 	return (passes)
 
 
 
 def rowparser(row):
-
-	cols = row.findAll('td')
-	dStr = cols[0].a.string
+	#print "rowparser called"
 
 	try:
-		mag = float(cols[1].string)
-	except:
-		mag = None
 
-	t1Str = ':'.join(cols[2].string.split(':'))
-	t2Str = ':'.join(cols[5].string.split(':'))
-	t3Str = ':'.join(cols[8].string.split(':'))
-	alt1 = cols[3].string.replace(u'\xB0', '')
-	az1 = cols[4].string
-	alt2 = cols[6].string.replace(u'\xB0', '')
-	az2 = cols[7].string
-	alt3 = cols[9].string.replace(u'\xB0', '')
-	az3 = cols[10].string
+		cols = row.findAll('td')
+		dStr = cols[0].a.string
 
-	loc1 = '%s-%s' % (az1, alt1)
-	loc2 = '%s-%s' % (az2, alt2)
-	loc3 = '%s-%s' % (az3, alt3)
+		try:
 
-	(start,startUnix) = maketime(dStr,t1Str)
-	(max,maxUnix) = maketime(dStr,t2Str)
-	(end,endUnix) = maketime(dStr,t3Str)
+			mag = float(cols[1].string)
+		except:
 
-	#print (start, max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, mag)
+			mag = None
 
-	return (start, max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, mag)
+		t1Str = ':'.join(cols[2].string.split(':'))
+		t2Str = ':'.join(cols[5].string.split(':'))
+		t3Str = ':'.join(cols[8].string.split(':'))
+		alt1 = cols[3].string.replace(u'\xB0', '')
+		az1 = cols[4].string
+		alt2 = cols[6].string.replace(u'\xB0', '')
+		az2 = cols[7].string
+		alt3 = cols[9].string.replace(u'\xB0', '')
+		az3 = cols[10].string
+
+		loc1 = '%s-%s' % (az1, alt1)
+		loc2 = '%s-%s' % (az2, alt2)
+		loc3 = '%s-%s' % (az3, alt3)
+
+		(start,startUnix) = maketime(dStr,t1Str)
+		(max,maxUnix) = maketime(dStr,t2Str)
+		(end,endUnix) = maketime(dStr,t3Str)
+
+		#print (start, max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, mag)
+		return (start, max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, mag)
+	except: #No passes in
+		print "	error in row, returning pass with None type in all fields"
+		return (None, None, None, None, None, None, None, None, None, None)
+
 #			  0     1    2    3     4     5         6        7        8      9
 #													^-The magic happens here.
 
 def maketime(dStr,timestring):
+	#print "maketime called"
+
 	#time magic - source timezone is GMT/UTC, remember that!
 	#look at: http://stackoverflow.com/questions/4770297/python-convert-utc-datetime-string-to-local-datetime
 	from_zone = tz.tzutc()
@@ -167,12 +195,15 @@ def maketime(dStr,timestring):
 	return(local_time,unix_time)
 
 def getnextpass(passes): #returns the next future pass
+	#print "getnextpass called"
+
 	for isspass in passes:
 		#print isspass
 		if isspass[6]>currenttime:
 			return(isspass)
 
 def which_pass_is_next(visible,regular): #determines whether the next visible or regular pass is first
+	#print "which_pass_is_next called"
 	if visible is None:
 		return regular
 	elif regular[6]+600 > visible[6]: #do a ten minute check to see if the visible pass isn't a delayed subset of the regular passes
@@ -182,6 +213,7 @@ def which_pass_is_next(visible,regular): #determines whether the next visible or
 		return regular
 
 def passes_too_old(passes): #checks the age of the passes returns false if we're still good.
+	#print "passes_too_old called"
 	try:
 		for isspass in passes:
 		#print isspass
@@ -236,7 +268,8 @@ try:
 		data,addr = UDPSock.recvfrom(1024)
 
 
-		remoteIP=IP(addr[0]).strNormal() #convert address of packet origin to string
+		#remoteIP=IP(addr[0]).strNormal() #convert address of packet origin to string
+		remoteIP='90.185.43.212'
 
 		logging.info(str(ctime()) + ': RX: \"' + str(data.rstrip('\n')) + '\" from ' + str(remoteIP))
 
@@ -256,7 +289,7 @@ try:
 		print
 
 		currenttime = int(time()) #Update time
-		DST = localtime().tm_isdst #Update DST byte
+		DST = localtime().tm_isdst #Update DST data
 
 		if last_visible_get_unix_time==0: #if passes have never been recieved = first run
 			logging.info('Retrieving passes.')
