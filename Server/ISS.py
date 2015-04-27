@@ -268,8 +268,7 @@ try:
 		data,addr = UDPSock.recvfrom(1024)
 
 
-		#remoteIP=IP(addr[0]).strNormal() #convert address of packet origin to string
-		remoteIP='90.185.43.212'
+		remoteIP=IP(addr[0]).strNormal() #convert address of packet origin to string
 
 		logging.info(str(ctime()) + ': RX: \"' + str(data.rstrip('\n')) + '\" from ' + str(remoteIP))
 
