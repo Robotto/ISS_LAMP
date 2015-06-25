@@ -252,7 +252,7 @@ switch(pass_state)
         	}
         else
 			{
-				VFD.sendString("Regular pass    T-");
+				VFD.sendString("Next pass       T-");
 				VFD.flashyString("LOADING        LOADING");
 			}
 
