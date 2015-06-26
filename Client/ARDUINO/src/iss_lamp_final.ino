@@ -296,7 +296,6 @@ switch(pass_state)
 
   case regular_underway: //regular pass in progress
         clock();
-
         if(currentEpoch>=passEndEpoch) pass_state=end_of_pass;
         break;
 
@@ -597,7 +596,7 @@ I::::::::IS:::::::::::::::SS S:::::::::::::::SS      R::::::R     R:::::RX:::::X
 IIIIIIIIII SSSSSSSSSSSSSSS    SSSSSSSSSSSSSSS        RRRRRRRR     RRRRRRRXXXXXXX       XXXXXXX
 */
 
-//		The recieved string is formatted as follows: Each '\' represents a null byte (0b00000000)
+//		The recieved data is formatted as follows: Each '\' represents a null byte (0b00000000)
 //
 // 		 V \ 1 \ -2.8 \ 1406937446 \ SSE-37 \ 1406937446 \ SSE-37 \ 1406851222 \ ESE-10
 //		 |   |     |        |          |         |           |          |          |
