@@ -403,7 +403,7 @@ try:
             UDPSock.sendto(MESSAGE, (remoteIP, remotePort))
             print
             print ' TX: %s' % (MESSAGE)
-            print
+            print '--------------------------------'
             print
 
 except Exception as e:
