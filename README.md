@@ -32,5 +32,11 @@ I will however take full credit for the VFD code, which sits at the bottom of th
 
 By take credit i mean that i wrote it, and hereby disclaim all ownership of it. feel free to use this code and edit, sell, buy, republish-taking-credit or print-out-and-eat it.
 
+Prerequisites for the server:
+
+```bash
+sudo apt install python-mechanize python-geoip python-ipy python-dateutil python-beautifulsoup 
+```
+
 Happy hacking!
 ~Robotto
