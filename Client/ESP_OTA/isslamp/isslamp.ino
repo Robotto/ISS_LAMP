@@ -5,36 +5,20 @@
 //OTA:
 #include <ArduinoOTA.h>
 #include <ESP8266mDNS.h>
+#include <WiFiManager.h>          //https://github.com/tzapu/WiFiManager
 
 #include "VFD.h"
 #define DISPLAY_SIZE 40
 VFD VFD(D10,D9,D0,D1,D2,D3,D4,D5,D6,D7);
-//VFD VFD(D10,D9,D7,D6,D5,D4,D3,D2,D1,D0);
 
 #define PIXEL_PIN   D8    // Digital IO pin connected to the NeoPixels.
 #define PIXEL_COUNT 2
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(PIXEL_COUNT, PIXEL_PIN, NEO_GRB + NEO_KHZ800);
 
-
-//Function declarations:
-void clock();
-void errorclock();
-void lookup_ntp_ip();
-void sendISSpacket(IPAddress& address);
-void sendNTPpacket(IPAddress& address);
-void handle_ntp();
-void UDPwait(boolean ISSorNTP); //true if ISS, false if NTP.
-void handle_ISS_udp();
-void timekeeper();
-void reset();
 //Neopixel stuff:
 uint32_t Wheel(byte WheelPos);
 void rainbowCycle(uint8_t wait);
 void fade(bool upDown, uint8_t wait);
-
-//WIFI SETTINGS:
-const char* ssid     = "SSID";
-const char* password = "WLAN_PASSWORD";
 
 IPAddress robottobox(5,79,74,16); //IP address constructor
 
@@ -95,6 +79,25 @@ String passEndDir;
 String displaybuffer="  ";
 int temp_vfd_position;
 
+
+void configModeCallback (WiFiManager *myWiFiManager) {
+  VFD.clear();
+  VFD.sendString("AP@");
+  String ipString=String(WiFi.softAPIP()[0]) + "." + String(WiFi.softAPIP()[1]) + "." + String(WiFi.softAPIP()[2]) + "." + String(WiFi.softAPIP()[3]);
+  VFD.sendString(ipString);
+
+  
+  /*
+  display.clear();
+  display.display();
+  display.drawString(0, 10, "Connection failed");
+  display.drawString(0, 20, "Creating accesspoint: ");
+  display.drawString(0, 30, myWiFiManager->getConfigPortalSSID());
+  display.drawString(0, 40, String(WiFi.softAPIP()));
+  */
+  }
+
+
 /*
    SSSSSSSSSSSSSSS                              tttt
  SS:::::::::::::::S                          ttt:::t
@@ -121,18 +124,13 @@ S:::::::::::::::SS   ee:::::::::::::e          tt:::::::::::tt  uu::::::::uu:::u
 */
 
 void setup() {
-  //delay(2000);
   //Serial.begin(115200);
   WiFi.hostname("ISS_LAMP");
-  WiFi.begin(ssid, password);
-
+  //Local intialization. Once its business is done, there is no need to keep it around
+  WiFiManager wifiManager;
   strip.begin();
-
-
   VFD.begin();
   delay(10);
-
-  // We start by connecting to a WiFi network
 
     VFD.sendString("Reactor online.");
     delay(1000);
@@ -154,21 +152,22 @@ void setup() {
     VFD.clear();
     VFD.sendString("Awaiting wifi connection...");
 
-  //VFD.sendString("Connecting to WiFi");
-  //VFD.sendString(String(ssid));
-
-
-  delay(500);
-
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(250);
-    VFD.sendString(".");
-    delay(250);
-    VFD.sendString(",");
+  //set callback that gets called when connecting to previous WiFi fails, and enters Access Point mode
+  wifiManager.setAPCallback(configModeCallback);
   
-  }
-
-
+    wifiManager.setConnectTimeout(10); //try to connect to known wifis ten seconds 
+  
+    //fetches ssid and pass and tries to connect
+    //if it does not connect it starts an access point with the specified name
+    //here  "ISS_LAMP"
+    //and goes into a blocking loop awaiting configuration
+    if (!wifiManager.autoConnect("ISS_LAMP")) {
+      VFD.clear();
+      VFD.sendString("Wifi setup failed :(");
+      delay(500);
+      reset();
+  
+    }
 
   String ipString=String(WiFi.localIP()[0]) + "." + String(WiFi.localIP()[1]) + "." + String(WiFi.localIP()[2]) + "." + String(WiFi.localIP()[3]);
   VFD.clear();
@@ -178,13 +177,13 @@ void setup() {
   //VFD.sendString(String(WiFi.localIP()));
   
   //OTA:
-   // Port defaults to 8266
+  // Port defaults to 8266
   // ArduinoOTA.setPort(8266);
   // Hostname defaults to esp8266-[ChipID]
   ArduinoOTA.setHostname("ISS_LAMP");
   
   // No authentication by default
-  ArduinoOTA.setPassword((const char *)"1804020311");
+  //ArduinoOTA.setPassword((const char *)"1804020311");
   //ArduinoOTA.setPasswordHash((const char *)"77ca9ed101ac99e43b6842c169c20fda");
 
   ArduinoOTA.onStart([]() {
@@ -215,8 +214,6 @@ void setup() {
     else if (error == OTA_END_ERROR) VFD.sendString("End Failed");
   });
   ArduinoOTA.begin();
-
-
 
 
   Udp.begin(localPort);
@@ -465,7 +462,7 @@ void clock()
 
 void errorclock()
 {
-  unsigned long epochAtError=currentEpoch;
+  static unsigned long epochAtError=currentEpoch;
   //PWM_ramp(false); //lights off
   //digitalWrite(PWM_PIN,true);
   //unsigned int error_seconds=0;
@@ -476,11 +473,12 @@ void errorclock()
   while(1)
   {
     while(millis()<lastmillis+1000) yield(); //WAIT FOR ABOUT A SECOND
-    currentEpoch+=((millis()-lastmillis)/1000); //add  a second or more to the current epoch
+    currentEpoch++;
+//    currentEpoch+=((millis()-lastmillis)/1000); //add  a second or more to the current epoch
     lastmillis=millis();
     clock();
     ArduinoOTA.handle();
-    if (currentEpoch>epochAtError+900000) reset(); //reset after 15 minutes
+    if (currentEpoch>epochAtError+30) reset(); //reset after 30 seconds
   }
 }
 
@@ -544,6 +542,8 @@ NNNNNNNN         NNNNNNN      TTTTTTTTTTT      PPPPPPPPPP                     TT
 void lookup_ntp_ip()
 {
 int retries=0;
+
+    //TODO: ping current timeServer IP, to see it it is still valid. then return without changes.. 
 
     while( WiFi.hostByName(NTP_hostName, timeServer) !=1) //if it returns something other than 1 we're in trouble.
     {
@@ -640,6 +640,7 @@ while (!Udp.parsePacket())
   UDPretryDelay++;
   if (UDPretryDelay==50)  //if 5 seconds has passed without an answer
     {
+      //TODO: refresh NTP IP if no response for "a while"... 
       if(ISSorNTP) sendISSpacket(robottobox);
       else sendNTPpacket(timeServer);
       UDPretries++;
