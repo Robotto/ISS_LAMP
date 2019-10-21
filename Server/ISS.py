@@ -8,7 +8,6 @@
 # -*- coding: UTF-8 -*-
 
 import mechanize
-#import GeoIP
 import ipinfo
 import logging
 
@@ -17,10 +16,7 @@ from BeautifulSoup import BeautifulSoup
 from datetime import datetime, date
 from dateutil import tz
 
-from time import strftime, strptime, mktime, struct_time, time, ctime, localtime, sleep
-from getopt import getopt
-#import os, sys
-#import envoy #calls bash commands as seperate threads.. unused.. for now..
+from time import strftime, strptime, mktime, time, ctime, localtime
 import collections #used to form a collection of passes
 
 import socket
