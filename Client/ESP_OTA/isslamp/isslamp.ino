@@ -2,42 +2,34 @@
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
 
+//webserver for control messages
+//'C' -> clock_only_control_state -> operate with clock only until 7am
+//'B' -> blank_control_state -> operate with no display until 7am
+//'R' -> reset -> resets device, thus enabling normal_operations_control_state
+
+#include <ESP8266WebServer.h>
+ESP8266WebServer server(80);
+
 //OTA:
 #include <ArduinoOTA.h>
 #include <ESP8266mDNS.h>
+#include <WiFiManager.h>          //https://github.com/tzapu/WiFiManager
 
 #include "VFD.h"
 #define DISPLAY_SIZE 40
 VFD VFD(D10,D9,D0,D1,D2,D3,D4,D5,D6,D7);
-//VFD VFD(D10,D9,D7,D6,D5,D4,D3,D2,D1,D0);
 
 #define PIXEL_PIN   D8    // Digital IO pin connected to the NeoPixels.
 #define PIXEL_COUNT 2
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(PIXEL_COUNT, PIXEL_PIN, NEO_GRB + NEO_KHZ800);
 
-
-//Function declarations:
-void clock();
-void errorclock();
-void lookup_ntp_ip();
-void sendISSpacket(IPAddress& address);
-void sendNTPpacket(IPAddress& address);
-void handle_ntp();
-void UDPwait(boolean ISSorNTP); //true if ISS, false if NTP.
-void handle_ISS_udp();
-void timekeeper();
-void reset();
 //Neopixel stuff:
 uint32_t Wheel(byte WheelPos);
 void rainbowCycle(uint8_t wait);
 void fade(bool upDown, uint8_t wait);
 
-//WIFI SETTINGS:
-const char* ssid     = "SSID";
-const char* password = "WLAN_PASSWORD";
 
 IPAddress robottobox(5,79,74,16); //IP address constructor
-
 const char* NTP_hostName = "dk.pool.ntp.org"; //should init with a null-char termination.
 IPAddress timeServer;//init empty IP adress container
 
@@ -61,10 +53,14 @@ enum machine_states { //default state should be "get_data"
 	visible_before_max,
 	print_end_info,
 	visible_after_max,
-	end_of_pass
+	end_of_pass,
+  override_state, //the override state happens when not in normal_operations_control_state 
+  overridden_state
 };
 
+
 machine_states state; //init the enum with the pass states.
+boolean showClock = true;
 
 //Timekeeper stuff:
 boolean DST = false; //Daylight savings? (summertime)
@@ -95,6 +91,25 @@ String passEndDir;
 String displaybuffer="  ";
 int temp_vfd_position;
 
+
+void configModeCallback (WiFiManager *myWiFiManager) {
+  VFD.clear();
+  VFD.sendString("AP@");
+  String ipString=String(WiFi.softAPIP()[0]) + "." + String(WiFi.softAPIP()[1]) + "." + String(WiFi.softAPIP()[2]) + "." + String(WiFi.softAPIP()[3]);
+  VFD.sendString(ipString);
+
+  
+  /*
+  display.clear();
+  display.display();
+  display.drawString(0, 10, "Connection failed");
+  display.drawString(0, 20, "Creating accesspoint: ");
+  display.drawString(0, 30, myWiFiManager->getConfigPortalSSID());
+  display.drawString(0, 40, String(WiFi.softAPIP()));
+  */
+  }
+
+
 /*
    SSSSSSSSSSSSSSS                              tttt
  SS:::::::::::::::S                          ttt:::t
@@ -121,18 +136,15 @@ S:::::::::::::::SS   ee:::::::::::::e          tt:::::::::::tt  uu::::::::uu:::u
 */
 
 void setup() {
-  //delay(2000);
   //Serial.begin(115200);
   WiFi.hostname("ISS_LAMP");
-  WiFi.begin(ssid, password);
-
+  //Local intialization. Once its business is done, there is no need to keep it around
+  WiFiManager wifiManager;
   strip.begin();
-
-
   VFD.begin();
-  delay(10);
+  VFD.scrollMode(false);
 
-  // We start by connecting to a WiFi network
+  delay(10);
 
     VFD.sendString("Reactor online.");
     delay(1000);
@@ -154,21 +166,22 @@ void setup() {
     VFD.clear();
     VFD.sendString("Awaiting wifi connection...");
 
-  //VFD.sendString("Connecting to WiFi");
-  //VFD.sendString(String(ssid));
-
-
-  delay(500);
-
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(250);
-    VFD.sendString(".");
-    delay(250);
-    VFD.sendString(",");
+  //set callback that gets called when connecting to previous WiFi fails, and enters Access Point mode
+  wifiManager.setAPCallback(configModeCallback);
   
-  }
-
-
+    wifiManager.setConnectTimeout(10); //try to connect to known wifis ten seconds 
+  
+    //fetches ssid and pass and tries to connect
+    //if it does not connect it starts an access point with the specified name
+    //here  "ISS_LAMP"
+    //and goes into a blocking loop awaiting configuration
+    if (!wifiManager.autoConnect("ISS_LAMP")) {
+      VFD.clear();
+      VFD.sendString("Wifi setup failed :(");
+      delay(500);
+      reset();
+  
+    }
 
   String ipString=String(WiFi.localIP()[0]) + "." + String(WiFi.localIP()[1]) + "." + String(WiFi.localIP()[2]) + "." + String(WiFi.localIP()[3]);
   VFD.clear();
@@ -178,19 +191,17 @@ void setup() {
   //VFD.sendString(String(WiFi.localIP()));
   
   //OTA:
-   // Port defaults to 8266
+  // Port defaults to 8266
   // ArduinoOTA.setPort(8266);
   // Hostname defaults to esp8266-[ChipID]
   ArduinoOTA.setHostname("ISS_LAMP");
   
-  // No authentication by default
-  ArduinoOTA.setPassword((const char *)"1804020311");
-  //ArduinoOTA.setPasswordHash((const char *)"77ca9ed101ac99e43b6842c169c20fda");
-
   ArduinoOTA.onStart([]() {
     VFD.clear();
     VFD.sendString("OTA Start");
     delay(500);
+    VFD.clear();
+    VFD.sendString("OTA Progress: ");
   });
 
   ArduinoOTA.onEnd([]() {
@@ -201,8 +212,8 @@ void setup() {
 
   ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
     //Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
-    VFD.clear();
-    VFD.sendString(String("OTA Progress: ") + String(progress / (total / 100)) + String("%"));
+    VFD.setPos(14);
+    VFD.sendString(String(progress / (total / 100)) + String("%"));
   });
 
   ArduinoOTA.onError([](ota_error_t error) {
@@ -216,7 +227,17 @@ void setup() {
   });
   ArduinoOTA.begin();
 
+  delay(1000);
+  VFD.clear();
+  VFD.sendString("HTTP server setup..");
+  server.on("/", http_handle_root);
+  server.on("/setmode", http_set_mode);
+  server.onNotFound(http_handle_not_found);
 
+  server.begin();
+  delay(500);
+  VFD.clear();
+  VFD.sendString("HTTP server started.");
 
 
   Udp.begin(localPort);
@@ -286,10 +307,15 @@ statemachine();
 
 ArduinoOTA.handle();
 
+server.handleClient();
+
+
 }
 
 void statemachine(){
-  switch(state)
+
+
+ switch(state)
   {
   case get_data:
         VFD.clear();
@@ -416,6 +442,17 @@ void statemachine(){
         fade(false,10);
         state=get_data;
         break;
+
+  case override_state:
+       VFD.clear(); //display out
+       for(int i=0; i<strip.numPixels(); i++) strip.setPixelColor(i,0); //lights out
+       strip.show();
+       state=overridden_state;
+       break;
+
+  case overridden_state: //state is exited in clock() @ 7am local time
+        clock();
+        break;
   }
 
 }
@@ -444,28 +481,43 @@ C:::::C                L:::::L               O:::::O     O:::::OC:::::C         
 void clock()
 {
 
-    VFD.setPos(DISPLAY_SIZE-8); //set at the far right end of display
 
     unsigned long hours=((currentEpoch  % 86400L) / 3600)+GMT_plus; //calc the hour (86400 equals secs per day)
     if (DST) hours++; //daylight savings boolean is checked
     unsigned long minutes=((currentEpoch % 3600) / 60);
     unsigned long seconds= (currentEpoch % 60);
 
+    //reset from overridden_state at 7am local time.
+    if(state == overridden_state && hours == 7 && minutes == 0 && seconds == 0) {
+      state=get_data;
+      showClock=true;
+    }
+
     // HH:MM:SS
     if ( hours > 23 ) hours = hours-24; //offset check since GMT and DST offsets are added after modulo
     displaybuffer=""; //start out empty
     if( hours < 10 ) displaybuffer+="0"; //add leading '0' to hours lower than 10
-    displaybuffer+=String(hours)+":";
+    displaybuffer+=String(hours);
+    displaybuffer+=":";
+
     if ( minutes < 10 ) displaybuffer+="0"; //add leading '0' to minutes lower than 10
-    displaybuffer+=String(minutes)+":";
+    displaybuffer+=String(minutes);
+
+    if(state != overridden_state){ //experimenting with how the clock looks in low-light mode
+    displaybuffer+=":";
     if ( seconds < 10 ) displaybuffer+="0"; //add leading '0' to seconds lower than 10
     displaybuffer+=String(seconds);
-    VFD.sendString(displaybuffer);
+    }
+
+    if(showClock==true){
+          VFD.setPos(DISPLAY_SIZE-displaybuffer.length()); //set at the far right end of display 
+          VFD.sendString(displaybuffer);
+    } 
 }
 
 void errorclock()
 {
-  unsigned long epochAtError=currentEpoch;
+  static unsigned long epochAtError=currentEpoch;
   //PWM_ramp(false); //lights off
   //digitalWrite(PWM_PIN,true);
   //unsigned int error_seconds=0;
@@ -476,11 +528,13 @@ void errorclock()
   while(1)
   {
     while(millis()<lastmillis+1000) yield(); //WAIT FOR ABOUT A SECOND
-    currentEpoch+=((millis()-lastmillis)/1000); //add  a second or more to the current epoch
+    currentEpoch++;
+//    currentEpoch+=((millis()-lastmillis)/1000); //add  a second or more to the current epoch
     lastmillis=millis();
     clock();
     ArduinoOTA.handle();
-    if (currentEpoch>epochAtError+900000) reset(); //reset after 15 minutes
+    server.handleClient();
+    if (currentEpoch>epochAtError+30) reset(); //reset after 30 seconds
   }
 }
 
@@ -544,6 +598,8 @@ NNNNNNNN         NNNNNNN      TTTTTTTTTTT      PPPPPPPPPP                     TT
 void lookup_ntp_ip()
 {
 int retries=0;
+
+    //TODO: ping current timeServer IP, to see it it is still valid. then return without changes.. 
 
     while( WiFi.hostByName(NTP_hostName, timeServer) !=1) //if it returns something other than 1 we're in trouble.
     {
@@ -640,6 +696,7 @@ while (!Udp.parsePacket())
   UDPretryDelay++;
   if (UDPretryDelay==50)  //if 5 seconds has passed without an answer
     {
+      //TODO: refresh NTP IP if no response for "a while"... 
       if(ISSorNTP) sendISSpacket(robottobox);
       else sendNTPpacket(timeServer);
       UDPretries++;
@@ -951,4 +1008,68 @@ void fade(bool upDown, uint8_t wait)
 			delay(wait);
 		}
 	}
+}
+
+void http_set_mode() {
+
+for (uint8_t i=0; i < server.args(); i++){
+
+    if(server.argName(i) == "B") {
+        showClock=false;
+        state=override_state;
+        server.send(200, "text/plain", "Blank mode on.");
+        return;
+    }
+
+    if(server.argName(i) == "C") {
+        showClock=true;
+        state=override_state;
+        server.send(200, "text/plain", "Clock mode on.");
+        return;
+    }
+  
+    if(server.argName(i) == "R") {
+        server.send(200, "text/plain", "RESET.");
+        reset();
+    }
+
+}
+  server.send(200,"text/plain", "OK");
+
+}
+
+void http_handle_root() {
+  server.sendContent("HTTP/1.1 200 OK\r\n"); //send new p\r\nage
+  server.sendContent("Content-Type: text/html\r\n");
+  server.sendContent("\r\n");
+  server.sendContent("<HTML>\r\n");
+  server.sendContent("<HEAD>\r\n");
+  server.sendContent("<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />\r\n");
+  server.sendContent("<meta name='viewport' content='width=device-width' />\r\n");
+  server.sendContent("<meta name='apple-mobile-web-app-status-bar-style' content='black-translucent' />\r\n");
+  server.sendContent("<link rel='stylesheet' type='text/css' href='https://moore.dk/doorcss.css' />\r\n");
+  server.sendContent("<TITLE>ISS LAMP</TITLE>\r\n");
+  server.sendContent("</HEAD>\r\n");
+  server.sendContent("<BODY>\r\n");
+  server.sendContent("<H1>ISS LAMP</H1>\r\n");
+  server.sendContent("<hr />\r\n");
+  server.sendContent("<br />\r\n");
+  if(state == overridden_state){
+    server.sendContent("<H2>Currently overridden</H2>\r\n");
+    if(showClock) server.sendContent("<a class=\"red\" href=\"/setmode?B=1\"\">Hide Clock</a><br><br><br>\r\n");
+    else server.sendContent("<a href=\"/setmode?C=1\"\">Show Clock</a><br><br><br>\r\n");
+    }
+  else {
+    server.sendContent("<H2>Operating normally</H2>\r\n");
+    server.sendContent("<a href=\"/setmode?C=1\"\">Clock only mode</a><br><br><br>\r\n");
+    server.sendContent("<a class=\"red\" href=\"/setmode?B=1\"\">Blank mode</a><br><br><br>\r\n");
+  }
+    
+  server.sendContent("<a class=\"red\" href=\"/setmode?R=1\"\">RESET</a>\r\n");  
+  server.sendContent("</BODY>\r\n");
+  server.sendContent("</HTML>\r\n");
+ }
+
+void http_handle_not_found() {
+  server.send(404, "text/plain", "File Not Found");
 }
