@@ -20,7 +20,7 @@ The location (LATTITUDE, LONGTITUDE, TIMEZONE), that the ISS data lookups are ba
 
 I use an old VFD display as my debug window on the arduino. It should be quite easy to change it to the serial interface, but beware the hardware.
 
-This will always be a prototype, A work in progress, an ongoing thing. It is not, nor will it ever, be "done". The latest addition to the hardware is the option to upload code over-the-air.
+This will always be a prototype, A work in progress, an ongoing thing. It is not, nor will it ever, be "done". The latest addition to the hardware is an http server listening for requests to dim the lights.
 
 Some of the code in this project has been copied from all over the interwebs, i'm sorry, but i haven't kept track of my sources. If you feel wronged, drop me a line and i'll give credit where it's due.
 
