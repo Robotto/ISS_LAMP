@@ -8,7 +8,8 @@
 # -*- coding: UTF-8 -*-
 
 import mechanize
-import GeoIP
+#import GeoIP
+import ipinfo
 import logging
 
 from BeautifulSoup import BeautifulSoup
@@ -264,6 +265,9 @@ try:
     print "Ready and waiting for inbound on port: %s"%incomingPort
     logging.info('Listening on port: '+str(incomingPort))
 
+    #init ipinfo handler:
+    handler = ipinfo.getHandler()
+
     while True:
 
         # Report on all data packets received and
@@ -279,14 +283,16 @@ try:
 
         logging.info(str(ctime()) + ': RX: \"' + str(data.rstrip('\n')) + '\" from ' + str(remoteIP))
 
-        gi = GeoIP.open("GeoLiteCity.dat", GeoIP.GEOIP_STANDARD) #get your own at http://dev.maxmind.com/geoip/legacy/geolite/
-
-        gir = gi.record_by_addr(remoteIP)
+#        gi = GeoIP.open("GeoLiteCity.dat", GeoIP.GEOIP_STANDARD) #get your own at http://dev.maxmind.com/geoip/legacy/geolite/
+#        gir = gi.record_by_addr(remoteIP)
         #gir = gi.record_by_addr('81.169.145.71') #somewhere in berlin
-
-        lat=gir['latitude']
-        lon=gir['longitude']
-        timezone=gir['time_zone']
+#        lat=gir['latitude']
+#        lon=gir['longitude']
+#        timezone=gir['time_zone']
+	details = handler.getDetails(remoteIP)
+	lat=details.loc.split(',')[0]
+	lon=details.loc.split(',')[1]
+	timezone=details.timezone
 
         print
         print ' RX: "%s" @ %s from %s' % (data.rstrip('\n'), ctime(), remoteIP)
