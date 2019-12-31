@@ -1,10 +1,4 @@
 #!/usr/bin/env python
-
-##living up to the license:
-##This product includes GeoLite data created by MaxMind, available from
-## <a href="http://www.maxmind.com">http://www.maxmind.com</a>.
-
-
 # -*- coding: UTF-8 -*-
 
 import mechanize
