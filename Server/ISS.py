@@ -167,6 +167,7 @@ def rowparser(row):
         (end,endUnix) = maketime(dStr,t3Str)
 
         #print (start, max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, mag)
+        #print start, startUnix
         return (start, max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, mag)
     except: #No passes in
         print "    error in row, returning pass with None type in all fields"
@@ -183,13 +184,17 @@ def maketime(dStr,timestring):
     from_zone = tz.tzutc()
     to_zone = tz.gettz(timezone) #determined from the IP of the source of the request
 
+    #if we are in december and dStr is a date in january, the pass is in the next year
+    if 'Jan' in dStr and date.today().month==12:
+        inferredYear = date.today().year+1
+    else:
+        inferredYear=date.today().year
+
     #create string to be parsed:
-    string = '%s %s %s' % (dStr, date.today().year, timestring) #this will break if next pass is in next calendar year. (FIXED in 2 lines!)
+    string = '%s %s %s' % (dStr, inferredYear, timestring) 
     #parse the created string into a datetime opbject:
     dt = datetime(*strptime(string, '%d %b %Y %H:%M:%S')[0:7])
-    #if we are in december and dt is a date in january, assume it's next year (it always will be)
-    if date.today().month==12 and dt.month==1:
-            dt.replace(year=date.today().year+1)
+    
     #timezome magic goes here:
     utc = dt.replace(tzinfo=from_zone)
     local_time = utc.astimezone(to_zone) #in local time from here - local time for whoever is doing the lookup
@@ -197,10 +202,9 @@ def maketime(dStr,timestring):
     return(local_time,unix_time)
 
 def getnextpass(passes): #returns the next future pass
-    #print "getnextpass called"
-
+    print "getnextpass called"
+    
     for isspass in passes:
-        #print isspass
         if isspass[6]>currenttime:
             return(isspass)
 
@@ -216,17 +220,18 @@ def which_pass_is_next(visible,regular): #determines whether the next visible or
 
 def passes_too_old(passes): #checks the age of the passes returns false if we're still good.
     #print "passes_too_old called"
+    status = True
     try:
         for isspass in passes:
-        #print isspass
             if isspass[6]>currenttime: #check starttime for passes in the list
-                return(False)
-
-        return(True)
+                status = False
+        
+        return(status)
         #if (passes[-1][6]<currenttime): #is the last entry in the deque in the past?
         #    return(True)
     except IndexError:  #No data exists.. that's kind of too old... right?
             return(True)
+
 
 incomingPort = 1337
 remotePort = 1337
@@ -285,10 +290,10 @@ try:
 #        lat=gir['latitude']
 #        lon=gir['longitude']
 #        timezone=gir['time_zone']
-	details = handler.getDetails(remoteIP)
-	lat=details.loc.split(',')[0]
-	lon=details.loc.split(',')[1]
-	timezone=details.timezone
+        details = handler.getDetails(remoteIP)
+        lat=details.loc.split(',')[0]
+        lon=details.loc.split(',')[1]
+        timezone=details.timezone
 
         print
         print ' RX: "%s" @ %s from %s' % (data.rstrip('\n'), ctime(), remoteIP)
@@ -317,7 +322,6 @@ try:
         if currenttime>last_visible_get_unix_time+html_cooldown_time:
             visible_quarantine=False
             print "Quarantine for visible passes inactive."
-            print
             #logging.info('Visible passes quarantine NOT active.')
         else:
             visible_quarantine=True
@@ -325,12 +329,10 @@ try:
             unixtime_at_lift=localtime(currenttime+seconds_to_lift)
             logging.info('Visible pass quarantine active.')
             print "Quarantine for visible passes ACTIVE, here be dragons. normal operations will resume in %s seconds @ %s"%(seconds_to_lift, strftime('%d/%m %H:%M:%S',unixtime_at_lift))
-            print
 
         if currenttime>last_regular_get_unix_time+html_cooldown_time:
             regular_quarantine=False
             print "Quarantine for regular passes inactive."
-            print
             #logging.info('Regular passes quarantine NOT active.')
         else:
             regular_quarantine=True
@@ -338,7 +340,6 @@ try:
             unixtime_at_lift=localtime(currenttime+seconds_to_lift)
             logging.info('Regular pass quarantine active.')
             print "Quarantine for regular passes ACTIVE, here be dragons. normal operations will resume in %s seconds @ %s"%(seconds_to_lift, strftime('%d/%m %H:%M:%S',unixtime_at_lift))
-            print
 
 
         if (visible_quarantine is False):
