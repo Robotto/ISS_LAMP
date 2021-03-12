@@ -235,8 +235,9 @@ listen_addr = ("",incomingPort)
 UDPSock.bind(listen_addr)
 
 # Global Vars.
-lat = 0
-lon = 0
+#hardcoding lat/lon for a quick and dirty fix.. TODO: do it right later, when migrating to python3
+lat = "56.1609"
+lon = "10.2042"
 timezone = tz.tzlocal() #changed as soon as a lookup occurs
 
 #last_html_get_unix_time = 0
@@ -285,8 +286,8 @@ try:
 #        lon=gir['longitude']
 #        timezone=gir['time_zone']
         details = handler.getDetails(remoteIP)
-        lat=details.loc.split(',')[0]
-        lon=details.loc.split(',')[1]
+        #lat=details.loc.split(',')[0] #see line 238!
+        #lon=details.loc.split(',')[1]
         timezone=details.timezone
 
         print
