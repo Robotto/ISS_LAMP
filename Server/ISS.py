@@ -60,10 +60,10 @@ def html_to_rows(html):
     #print "    raw html:"
     #print html
 
-        # In the past, Beautiful Soup hasn't been able to parse the Heavens Above HTML.
-        # To get around this problem, we extract just the table of ISS data and set
-        # it in a well-formed HTML skeleton. If there is no table of ISS data, create
-        # an empty table
+    # In the past, Beautiful Soup hasn't been able to parse the Heavens Above HTML.
+    # To get around this problem, we extract just the table of ISS data and set
+    # it in a well-formed HTML skeleton. If there is no table of ISS data, create
+    # an empty table
     try:
         #print "    trying to split"
         Table = html.split(r'<table class="standardTable"', 1)[1] #split after first "standard table" tag, return 2nd portion
@@ -117,7 +117,7 @@ def rows_to_sets(Rows):    #calls the rowparser for all the available rows, retu
     for row in Rows:
         #print row
         (start, max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, mag) = rowparser(row)
-            ##insert age check here?
+        ##insert age check here?
         passes.append([start,max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, mag])
 
     #print "passes:"
@@ -185,10 +185,10 @@ def maketime(dStr,timestring):
         inferredYear=date.today().year
 
     #create string to be parsed:
-    string = '%s %s %s' % (dStr, inferredYear, timestring) 
+    string = '%s %s %s' % (dStr, inferredYear, timestring)
     #parse the created string into a datetime opbject:
     dt = datetime(*strptime(string, '%d %b %Y %H:%M:%S')[0:7])
-    
+
     #timezome magic goes here:
     utc = dt.replace(tzinfo=from_zone)
     local_time = utc.astimezone(to_zone) #in local time from here - local time for whoever is doing the lookup
@@ -197,7 +197,7 @@ def maketime(dStr,timestring):
 
 def getnextpass(passes): #returns the next future pass
     print "getnextpass called"
-    
+
     for isspass in passes:
         if isspass[6]>currenttime:
             return(isspass)
@@ -207,7 +207,7 @@ def which_pass_is_next(visible,regular): #determines whether the next visible or
     if visible is None:
         return regular
     elif regular[6]+600 > visible[6]: #do a ten minute check to see if the visible pass isn't a delayed subset of the regular passes
-                                      #(regular passes always start and end at 10degrees elevation, visible passes sometimes start higher)
+        #(regular passes always start and end at 10degrees elevation, visible passes sometimes start higher)
         return visible
     else:
         return regular
@@ -219,12 +219,12 @@ def passes_too_old(passes): #checks the age of the passes returns false if we're
         for isspass in passes:
             if isspass[6]>currenttime: #check starttime for passes in the list
                 status = False
-        
+
         return(status)
         #if (passes[-1][6]<currenttime): #is the last entry in the deque in the past?
         #    return(True)
     except IndexError:  #No data exists.. that's kind of too old... right?
-            return(True)
+        return(True)
 
 
 incomingPort = 1337
@@ -279,12 +279,12 @@ try:
 
         logging.info(str(ctime()) + ': RX: \"' + str(data.rstrip('\n')) + '\" from ' + str(remoteIP))
 
-#        gi = GeoIP.open("GeoLiteCity.dat", GeoIP.GEOIP_STANDARD) #get your own at http://dev.maxmind.com/geoip/legacy/geolite/
-#        gir = gi.record_by_addr(remoteIP)
+        #        gi = GeoIP.open("GeoLiteCity.dat", GeoIP.GEOIP_STANDARD) #get your own at http://dev.maxmind.com/geoip/legacy/geolite/
+        #        gir = gi.record_by_addr(remoteIP)
         #gir = gi.record_by_addr('81.169.145.71') #somewhere in berlin
-#        lat=gir['latitude']
-#        lon=gir['longitude']
-#        timezone=gir['time_zone']
+        #        lat=gir['latitude']
+        #        lon=gir['longitude']
+        #        timezone=gir['time_zone']
         details = handler.getDetails(remoteIP)
         #lat=details.loc.split(',')[0] #see line 238!
         #lon=details.loc.split(',')[1]
