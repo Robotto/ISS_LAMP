@@ -235,11 +235,6 @@ UDPSock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
 listen_addr = ("",incomingPort)
 UDPSock.bind(listen_addr)
 
-# Global Vars.
-#hardcoding lat/lon for a quick and dirty fix.. TODO: do it right later, when migrating to python3
-lat = "56.1609"
-lon = "10.2042"
-timezone = tz.tzlocal() #changed as soon as a lookup occurs
 
 #last_html_get_unix_time = 0
 last_visible_get_unix_time = 0
@@ -272,17 +267,18 @@ while True:
     #recvfrom waits for incoming data:
     data,addr = UDPSock.recvfrom(1024)
 
-
     remoteIP=IP(addr[0]).strNormal() #convert address of packet origin to string
-    #remoteIP='87.62.101.85'
 
     logging.info(f'{ctime()}: RX: \"{data.rstrip()}\" from  {remoteIP}')
 
-
     details = handler.getDetails(remoteIP)
 
+    #hardcoding lat/lon for a quick and dirty fix.. TODO: do it right later, when migrating to python3
+    lat = "56.1609"
+    lon = "10.2042"
     #lat=details.loc.split(',')[0] #see line 238!
     #lon=details.loc.split(',')[1]
+
     #timezone=details.timezone
     timezone= 'Europe/Copenhagen'
 
