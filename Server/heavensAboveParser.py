@@ -54,3 +54,8 @@ class IssDataGetterParserStorer:
         pass
 #TODO: Make two instances of the above, have them refresh their stuff, ask them both for their next pass, and choose the earliest one from that.
 
+
+class IssDataServeer:
+    def __init__(self):
+        pass
+#TODO: open connection, listen for request, answer politely.
