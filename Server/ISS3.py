@@ -12,7 +12,6 @@ from datetime import datetime, date
 from dateutil import tz
 
 from time import strftime, strptime, mktime, time, ctime, localtime
-import collections #used to form a collection of passes
 
 import socket
 from IPy import IP
@@ -21,7 +20,7 @@ def refresh_passes(isvisible):
     #print "refresh_passes called"
     html = get_html(isvisible)
     rows = html_to_rows(html)
-    passes = rows_to_sets(rows)
+    passes = rows_to_list_of_passes(rows)
     return (passes)
 
 
@@ -31,122 +30,48 @@ def get_html(isvisible):
     VisibleURL = 'http://heavens-above.com/PassSummary.aspx?showAll=f&satid=25544&lat=%s&lng=%s&alt=12' %(lat, lon)
     AllURL = 'http://heavens-above.com/PassSummary.aspx?showAll=t&satid=25544&lat=%s&lng=%s&alt=12' %(lat, lon)
 
-    #http://heavens-above.com/PassSummary.aspx?showAll=f&satid=25544&lat=56.156361&lng=10.188631&alt=12&tz=CET
-    #http://heavens-above.com/PassSummary.aspx?showAll=t&satid=25544&lat=56.156361&lng=10.188631&alt=12&tz=CET
-
-    #VisibleURL = 'http://62.212.66.171/iss/visible.htm'
-    #VisibleURL = 'http://62.212.66.171/iss/visible_no_passes.html'
-
-    #AllURL = 'http://62.212.66.171/iss/all.html'
-    #AllURL = 'http://62.212.66.171/iss/visible_but_no_passes.htm'
-
     br = mechanize.Browser()
     br.set_handle_robots(False)
     # Get the ISS PASSES pages:
-
-
     if isvisible:
-        print('    Retrieving list of visible passes')
+        print(f'    Retrieving list of visible passes from {VisibleURL}')
         Html = br.open(VisibleURL).read()
     else:
-        print('    Retrieving list of regular passes')
+        print(f'    Retrieving list of regular passes from {AllURL}')
         Html = br.open(AllURL).read()
 
     return(Html.decode('UTF-8'))
 
 
 def html_to_rows(html):
-    #print 'html_to_rows called'
-
-    #print "    raw html:"
-    #print html
-
-        # In the past, Beautiful Soup hasn't been able to parse the Heavens Above HTML.
-        # To get around this problem, we extract just the table of ISS data and set
-        # it in a well-formed HTML skeleton. If there is no table of ISS data, create
-        # an empty table
-    try:
-        #print "    trying to split"
-        Table = html.split(r'<table class="standardTable"', 1)[1] #split after first "standard table" tag, return 2nd portion
-        #print "Table after first split:"
-        #print Table
-        #Table = Table.split(r'<tr class="tablehead">', 1)[1] #split after first "tablehead" tag return second portion
-        Table = Table.split(r'<thead>', 1)[1] #split after first "tablehead" tag return second portion
-        #print "Table after second split:"
-        #print Table
-        Table = Table.split(r'</thead>', 1)[1] #split after first "tablehead" tag return second portion , again.
-        Table = Table.split(r'</tr>', 1)[1] #split after first "</tr>" tag return second portion
-        Table = Table.split(r'</table>', 1)[0] #split after first "</table>" return first portion
-
-        #print "Table after all splits:"
-        #print Table
-
-    except IndexError:
-        print("    no html to split, creating empty table..")
-        Table = '<tr><td></td></tr>'
-
-    newHtml = '''<html>
-<head>
-</head>
-<body>
-<table>
-%s
-</table>
-</body>
-</html>''' % Table
-
-    #print "    created a new html... parsing"
-    # Parse the newly created HTML.
-    Soup = BeautifulSoup(newHtml,features="html5lib")
-
-    #Collect only the data rows of the table.
-
-    #print "    creating collection of rows"
-    Rows = Soup.findAll('table')[0].findAll('tr')[0:]
-    #print 'The parsed rows:'
-    #print Rows
-
-    #print "    done."
+    Soup = BeautifulSoup(html,features="html5lib")
+    Rows = Soup.findAll('tr', {"class": "clickableRow"})
     return (Rows)
 
-def rows_to_sets(Rows):    #calls the rowparser for all the available rows, returns a set of passes.
-    #print "rows_to_sets called"
-
-    #passes = collections.deque(maxlen=50) #magic number...
-    passes = collections.deque()
-
+def rows_to_list_of_passes(Rows):    #calls the rowparser for all the available rows, returns a set of passes.
+    passes = []
     for row in Rows:
-        #print row
-        (start, max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, mag) = rowparser(row)
-            ##insert age check here?
-        passes.append([start,max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, mag])
-
-    #print "passes:"
-    #print passes
-    #print "    done."
+        passes.append(rowparser(row))
+    print(passes)
     return (passes)
-
-
 
 def rowparser(row):
     #print "rowparser called"
 
     try:
-
         cols = row.findAll('td')
         dStr = cols[0].a.string
 
+        #visible passes have a magnitude, non-visible passes do not:
         try:
-
             mag = float(cols[1].string)
         except:
-
             mag = None
 
         t1Str = ':'.join(cols[2].string.split(':'))
         t2Str = ':'.join(cols[5].string.split(':'))
         t3Str = ':'.join(cols[8].string.split(':'))
-        alt1 = cols[3].string.replace('\xB0', '')
+        alt1 = cols[3].string.replace('\xB0', '') #remove '°'
         az1 = cols[4].string
         alt2 = cols[6].string.replace('\xB0', '')
         az2 = cols[7].string
@@ -157,16 +82,17 @@ def rowparser(row):
         loc2 = '%s-%s' % (az2, alt2)
         loc3 = '%s-%s' % (az3, alt3)
 
+        #TODO: what if a pass starts and ends on different sides of midnight?
+        # like this one: https://heavens-above.com/passdetails.aspx?lat=56.1609&lng=10.2042&loc=Unspecified&alt=12&tz=UCT&satid=25544&mjd=59465.9980749864&type=A
+
         (start,startUnix) = maketime(dStr,t1Str)
         (max,maxUnix) = maketime(dStr,t2Str)
         (end,endUnix) = maketime(dStr,t3Str)
 
-        #print (start, max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, mag)
-        #print start, startUnix
-        return (start, max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, mag)
-    except: #No passes in
+        return [start, max, end, loc1, loc2, loc3, startUnix, maxUnix, endUnix, mag]
+    except:
         print("    error in row, returning pass with None type in all fields")
-        return (None, None, None, None, None, None, None, None, None, None)
+        return [None, None, None, None, None, None, None, None, None, None]
 
 #              0     1    2    3     4     5         6        7        8      9
 #                                                    ^-The magic happens here.
@@ -193,14 +119,16 @@ def maketime(dStr,timestring):
     #timezome magic goes here:
     utc = dt.replace(tzinfo=from_zone)
     local_time = utc.astimezone(to_zone) #in local time from here - local time for whoever is doing the lookup
-    unix_time =int(mktime(local_time.timetuple()))
+    unix_time = int(mktime(local_time.timetuple()))
     return(local_time,unix_time)
 
 def getnextpass(passes): #returns the next future pass
     print("getnextpass called")
     
     for isspass in passes:
-        if isspass[6]>currenttime:
+        if isspass[6] < currenttime: #remove outdated passes
+            passes.remove(isspass)
+        else:
             return(isspass)
 
 def which_pass_is_next(visible,regular): #determines whether the next visible or regular pass is first
@@ -208,24 +136,10 @@ def which_pass_is_next(visible,regular): #determines whether the next visible or
     if visible is None:
         return regular
     elif regular[6]+600 > visible[6]: #do a ten minute check to see if the visible pass isn't a delayed subset of the regular passes
-                                      #(regular passes always start and end at 10degrees elevation, visible passes sometimes start higher)
+                                     #(regular passes always start and end at 10degrees elevation, visible passes sometimes start higher)
         return visible
     else:
         return regular
-
-def passes_too_old(passes): #checks the age of the passes returns false if we're still good.
-    #print "passes_too_old called"
-    status = True
-    try:
-        for isspass in passes:
-            if isspass[6]>currenttime: #check starttime for passes in the list
-                status = False
-        
-        return(status)
-        #if (passes[-1][6]<currenttime): #is the last entry in the deque in the past?
-        #    return(True)
-    except IndexError:  #No data exists.. that's kind of too old... right?
-            return(True)
 
 
 incomingPort = 1337
@@ -276,7 +190,7 @@ while True:
     #hardcoding lat/lon for a quick and dirty fix.. TODO: do it right later, when migrating to python3
     lat = "56.1609"
     lon = "10.2042"
-    #lat=details.loc.split(',')[0] #see line 238!
+    #lat=details.loc.split(',')[0]
     #lon=details.loc.split(',')[1]
 
     #timezone=details.timezone
@@ -329,34 +243,26 @@ while True:
         print("Quarantine for regular passes ACTIVE, here be dragons. normal operations will resume in %s seconds @ %s"%(seconds_to_lift, strftime('%d/%m %H:%M:%S',unixtime_at_lift)))
 
 
-    if (visible_quarantine is False):
-        if passes_too_old(visiblepasses):
-            logging.info('Refreshing visible passes.')
-            print(f'Visible pass list for {remoteIP} outdated, refreshing...')
-            visiblepasses.clear()
-            visiblepasses=refresh_passes(True)
-            last_visible_get_unix_time=currenttime
-    else:
-        if passes_too_old(visiblepasses):
-            logging.warning('Ran out of visible passes before end of quarantine.')
-            print("Visible pass data outdated (or empty). But not enough time has passed since last get from heavens-above.com")
-            #print visiblepasses
-            visiblepasses.clear()
+    if len(visiblepasses) < 1:
+        infoStr = f'Visible pass list for {remoteIP} has been emptied! '
+        if visible_quarantine is False:
+            infoStr += "Refreshing now!"
+            visiblepasses = refresh_passes(True)
+            last_visible_get_unix_time = currenttime
+        else:
+            infoStr += 'But not enough time has passed since last get from heavens-above.com :('
+        print(infoStr)
 
-    if (regular_quarantine is False):
-        if passes_too_old(regularpasses):
-            logging.info('Refreshing regular passes.')
-            print(f'Regular pass list for {remoteIP} outdated, refreshing...')
-            regularpasses.clear()
+    if len(regularpasses) < 1:
+        infoStr = f'Regular pass list for {remoteIP} has been emptied! '
+        if regular_quarantine is False:
+            infoStr += "Refreshing now!"
             regularpasses=refresh_passes(False)
             last_regular_get_unix_time=currenttime
-    else:
-        if passes_too_old(regularpasses):
-            logging.warning('Ran out of regular passes before end of quarantine.')
-            print("Regular pass data outdated (or empty). But not enough time has passed since last get from heavens-above.com")
-            #print regularpasses
-            regularpasses.clear()
-        #this means that there will be no data in the deque, and that the bad data string will be sent if asked.
+        else:
+            infoStr += 'But not enough time has passed since last get from heavens-above.com :('
+        print(infoStr)
+        #this means that there will be no data in the lidt, and that the bad data string will be sent if asked.
 
 
     if (data.rstrip() == b'iss?'):
