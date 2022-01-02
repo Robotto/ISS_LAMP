@@ -1,7 +1,7 @@
 ISS_LAMP
 ========
 
-Currently undergoing an extensive rewrite and restructuring, and also migrating to python3... This code was born ugly.. it's time to change that... I'm hoping to use this a some sort of a roadmap:
+Currently undergoing an extensive rewrite and restructuring, and also migrating to python3... This code was born ugly.. it's time to change that... I'm hoping to use this UMLish diagram a some sort of a roadmap:
 
 ![UML roadmap](ISS_LAMP_SERVER.png)
 
