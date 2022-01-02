@@ -1,6 +1,11 @@
 ISS_LAMP
 ========
 
+Currently undergoing an extensive rewrite and restructuring, and also migrating to python3... This code was born ugly.. it's time to change that... I'm hoping to use this a some sort of a roadmap:
+
+![UML roadmap](ISS_LAMP_SERVER.png)
+
+
 My take on the ISS lamp, now based on an ESP8266 (wemos D1 mini). I did a writeup with nice pictures for [the hackaday challenge in 2014](http://hackaday.io/project/2026-iss-lamp-ntp-clock-artpiece)
 
 The idea is to have a "stand-alone" unit which only needs power and wifi to work
@@ -16,7 +21,7 @@ Since heavens-above.com started to limit page hits per hour pr device, a caching
 
 The IPv4 address of the server (and GMT offset for ntp time) is hardcoded into the arduino code. And easily changeable there.
 
-The location (LATTITUDE, LONGTITUDE, TIMEZONE), that the ISS data lookups are based on, fetched from the [ipInfo API](https://github.com/ipinfo/python) .
+The location (LATTITUDE, LONGTITUDE, TIMEZONE), that the ISS data lookups are based on, fetched from the [ipInfo API](https://github.com/ipinfo/python) ... but are sometimes hardcoded if i don't like the IPinfo i get about my home IP.
 
 I use an old VFD display as my debug window on the arduino. It should be quite easy to change it to the serial interface, but beware the hardware.
 
@@ -28,7 +33,7 @@ I will however take full credit for the VFD code, which was written and libraryf
 
 By take credit i mean that i wrote it, and hereby disclaim all ownership of it. feel free to use this code and edit, sell, buy, republish-taking-credit or print-out-and-eat it.
 
-Prerequisites for the server:
+Prerequisites for the server: (Python2 - Deprecated)
 
 ```bash
 mechanize ipinfo ipy dateutil beautifulsoup 
