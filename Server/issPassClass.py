@@ -2,19 +2,17 @@
 import datetime
 from dateutil import parser, tz
 
-
-class IssPass:
-
-    def __init__(self, row):
-        self.rowParser(row)
-
-    def isVisible(self):
-        if self.magnitude:
-            return True
-        return False
+#static methods, because utility functions don't reallt need an instance...
+class IssPassUtil:
+    '''Returns an instance of IssPass built from a row from heavens-above.com'''
+    @staticmethod
+    def getPassFromRow(row):
+        p = IssPassUtil.rowParser(row) #ew...
+        return IssPass(p["startAz"], p["maxAz"], p["endAz"], p["tStart"], p["tMax"], p["tEnd"], p["magnitude"])
 
     '''Parses rows of data from heavens-above.com'''
-    def rowParser(self, row):
+    @staticmethod
+    def rowParser(row):
 
         cols = row.findAll('td')
         dStr = cols[0].a.string
@@ -35,29 +33,17 @@ class IssPass:
         alt3 = cols[9].string.replace('\xB0', '')
         az3 = cols[10].string
 
-        loc1 = '%s-%s' % (az1, alt1)
-        loc2 = '%s-%s' % (az2, alt2)
-        loc3 = '%s-%s' % (az3, alt3)
+        azAlt1 = '%s-%s' % (az1, alt1)
+        azAlt2 = '%s-%s' % (az2, alt2)
+        azAlt3 = '%s-%s' % (az3, alt3)
 
-        # like this one: https://heavens-above.com/passdetails.aspx?lat=56.1609&lng=10.2042&loc=Unspecified&alt=12&tz=UCT&satid=25544&mjd=59465.9980749864&type=A
+        startUnix, maxUnix, endUnix = IssPassUtil.makeTime(dStr, t1Str, t2Str, t3Str)
 
-        startUnix, maxUnix, endUnix = self.makeTime(dStr, t1Str, t2Str, t3Str)
-
-        # self.startTimeStr = start
-        # self.maxTimeStr = max
-        # self.endTimeStr = end
-        self.startAzStr = loc1
-        self.maxAzStr = loc2
-        self.endAzStr = loc3
-
-        self.startTimeUnix = startUnix
-        self.maxTimeUnix = maxUnix
-        self.endTimeUnix = endUnix
-
-        self.magnitude = mag
+        return {"startAz": azAlt1, "maxAz": azAlt2, "endAz": azAlt3, "tStart": startUnix, "tMax": maxUnix, "tEnd": endUnix, "magnitude": mag}
 
     '''Takes strings from the website about dates and times, and infers real time data'''
-    def makeTime(self, dateString, timeStartStr, timeMaxStr, timeEndStr):
+    @staticmethod
+    def makeTime(dateString, timeStartStr, timeMaxStr, timeEndStr):
 
         '''check whether the pass occurs next year'''
         # if we are in december and dStr is a date in january, the pass is in the next year
@@ -76,20 +62,42 @@ class IssPass:
 
         '''
         Check whether midnight occurs during pass, since this would break using datestring to create all dt objects!
-        if discrepancies are found, shift the parsed timestamps one day forward (they passed midnight)
+        if discrepancies are found, shift the parsed timestamps one year forward (they passed midnight)
         '''
         if dt2 < dt1:
             dt2 += datetime.timedelta(days=1)
         if dt3 < dt2:
             dt3 += datetime.timedelta(days=1)
 
-        # TODO: Extra super special case: A pass occurs during midnight on new-years eve????!?!
+        #Extra super special case: A pass occurs during midnight on new-years eve!!
+        if dt2 < dt1:
+            dt2.replace(year=dt2.year+1)
+        if dt3 < dt2:
+            dt3.replace(year=dt3.year+1)
+
 
         return int(dt1.timestamp()), int(dt2.timestamp()), int(dt3.timestamp())
 
-    def __str__(self):
-        return f'ISS pass data, for a {f"visible pass, with magnitude {self.magnitude}," if self.magnitude else "regular (non-visible) pass"} that starts on {datetime.datetime.fromtimestamp(self.startTimeUnix, tz=tz.UTC)}'
+class IssPass:
 
+    def __init__(self, _startAz, _maxAz, _endAz, _tStart, _tMax, _tEnd, _magnitude=None):
+        self.startAz = _startAz
+        self.maxAz = _maxAz
+        self.endAz = _endAz
+
+        self.tStart = _tStart
+        self.tMax = _tMax
+        self.tEnd = _tEnd
+
+        self.magnitude = _magnitude
+
+    def isVisible(self):
+        if self.magnitude:
+            return True
+        return False
+
+    def __str__(self):
+        return f'ISS pass data, for a {f"visible pass, with magnitude {self.magnitude}," if self.magnitude else "regular (non-visible) pass"} that starts on {datetime.datetime.fromtimestamp(self.tStart, tz=tz.UTC)}'
 
     '''
     Do a ten minute check to see if the visible pass isn't a delayed subset of the regular passes
@@ -102,12 +110,12 @@ class IssPass:
     thus it will have an earlier timestamp and always be selected first.. i try to fix it by offsetting the compare by 10 minutes...
     '''
     def __lt__(self, other):
-        return self.startTimeUnix + 600 < other.startTimeUnix  # if this pass is earlier than the other one. Even after adding ten minutes to own start time
+        return self.tStart + 600 < other.tStart  # if this pass is earlier than the other one. Even after adding ten minutes to own start time
 
     def __gt__(self, other):
-        return other.startTimeUnix - 600 < self.startTimeUnix
+        return other.tStart - 600 < self.tStart
 
     def __eq__(self, other):
-        return abs(self.startTimeUnix-other.startTimeUnix)<600  # They are the same pass.
+        return abs(self.tStart-other.tStart) < 600  # They are the same pass.
 
 

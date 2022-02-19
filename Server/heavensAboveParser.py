@@ -2,7 +2,7 @@ from time import time
 import mechanize
 from bs4 import BeautifulSoup
 
-from issPassClass import IssPass
+from issPassClass import IssPassUtil
 
 class HeavensAboveDataStore:
 
@@ -19,7 +19,7 @@ class HeavensAboveDataStore:
             self.quarantineUntil = int(time()) + self.quarantineDuration
 
             for row in rows:
-                self.passes.append(IssPass(row))
+                self.passes.append(IssPassUtil.getPassFromRow(row))
             print(f'Parsed {len(rows)} rows, and added {len(self.passes)} passes')
         else:
             print('Error! unable to refresh passes! Quarantine active!')
