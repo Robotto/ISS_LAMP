@@ -278,7 +278,7 @@ while True:
             if next_pass[9] is None:
 
                 print("Not visible, and will start in %s seconds @ %s" %(next_pass[6]-currenttime, next_pass[0].strftime('%d/%m %H:%M:%S')))
-                logging.info('Next pass is visible and will occur at '+ str(next_pass[0].strftime('%d/%m %H:%M:%S')))
+                logging.info('Next pass is not visible and will occur at '+ str(next_pass[0].strftime('%d/%m %H:%M:%S')))
                 logging.info('TX: R' + str(DST) + str(next_pass[6]) + str(next_pass[3]) + str(next_pass[7]) + str(next_pass[4]) + str(next_pass[8]) + str(next_pass[5]))
                 MESSAGE='R\0%s\0%s\0%s\0%s\0%s\0%s\0%s' % (DST, next_pass[6],next_pass[3],next_pass[7],next_pass[4],next_pass[8],next_pass[5])
             else:
