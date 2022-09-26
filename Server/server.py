@@ -64,6 +64,7 @@ class IssDataServer:
                         self.datastore[key] = locationSpecificISSpassStorage(lat,lon)
 
                     nextPass = self.datastore[key].getNextPass()
+                    print(f"nextPass: {nextPass}")
                     dst = IssPassUtil.getClientDSTstr(timezone,nextPass.tStart)
                     MESSAGE = IssPassUtil.message(nextPass,dst)
 
