@@ -46,7 +46,6 @@ class IssDataServer:
 
 
             if (data.rstrip() == b'iss?'):
-                try:
 
                     lat,lon = IssPassUtil.getLatLonFromIP(remoteIP)
                     timezone = IssPassUtil.getTZfromLatLon(lat,lon)
@@ -68,15 +67,14 @@ class IssDataServer:
                     dst = IssPassUtil.getClientDSTstr(timezone,nextPass.tStart)
                     MESSAGE = IssPassUtil.message(nextPass,dst)
 
-                except:
-                    MESSAGE = 'fail at this end, sorry'
-                    logging.warning('parsing of data failed.')
+                #    MESSAGE = 'fail at this end, sorry'
+                #    logging.warning('parsing of data failed.')
 
-                self.UDPSock.sendto(MESSAGE.encode('ASCII'), (remoteIP, self.remotePort))
-                print()
-                print(' TX: %s' % (MESSAGE))
-                print('--------------------------------')
-                print()
+                    self.UDPSock.sendto(MESSAGE.encode('ASCII'), (remoteIP, self.remotePort))
+                    print()
+                    print(' TX: %s' % (MESSAGE))
+                    print('--------------------------------')
+                    print()
 
 
 IssDataServer()
