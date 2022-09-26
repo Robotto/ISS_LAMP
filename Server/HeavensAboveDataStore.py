@@ -2,13 +2,11 @@ from issPassClass import IssPassUtil
 import datetime
 import time
 
-class clientSpecificISSpassStorage:
 
-    def __init__(self,client_IP):
-        self.ipv4 = client_IP
-        #GET lat,lon from client IP: #TODO: THIS IS FAKED for now!
-        [lat,lon] = IssPassUtil.getLatLonFromIP(self.ipv4)
 
+class locationSpecificISSpassStorage:
+
+    def __init__(self, lat, lon):
         # not providing heavens-above with a tz gives you the data in utc time.. which is what you want. :)
         self.visiblePassesURL = 'http://heavens-above.com/PassSummary.aspx?showAll=f&satid=25544&lat=%s&lng=%s&alt=12' % (lat, lon)
         self.allPassesURL = 'http://heavens-above.com/PassSummary.aspx?showAll=t&satid=25544&lat=%s&lng=%s&alt=12' % (lat, lon)
@@ -16,7 +14,7 @@ class clientSpecificISSpassStorage:
         self.visiblePasses = URLSpecificPassDataStore(self.visiblePassesURL)
         self.regularPasses = URLSpecificPassDataStore(self.allPassesURL)
 
-    def determineAndGetNextPass(self):
+    def getNextPass(self):
         nextVisible = self.visiblePasses.getNextPass()
         nextRegular = self.regularPasses.getNextPass()
         return min([nextVisible, nextRegular])

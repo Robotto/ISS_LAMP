@@ -3,15 +3,33 @@ import datetime
 from dateutil import parser, tz
 import mechanize
 from bs4 import BeautifulSoup
+from ip2geotools.databases.noncommercial import DbIpCity
+from timezonefinder import TimezoneFinder
+
 # static methods, because utility functions don't really need an instance...
 
 class IssPassUtil:
     @staticmethod
-    def getLatLonFromIP(ipv4): #TODO: THIS IS NOT IMPLEMENTED CORRECTLY
-        lat = "56.1609"
-        lon = "10.2042"
-        print(f"WARN: Returning hardcoded lat/lon: [{lat},{lon}] and ignoring IP!")
-        return [lat,lon]
+    def getLatLonFromIP(ipv4):
+        # https://iplocation.io/
+        # https://db-ip.com/<IPV4>
+        # https://pypi.org/project/ip2geotools/
+        #usage: IssPassUtil.getLatLonFromIP(ipv4)
+
+        response = DbIpCity.get(ipv4, api_key='free')
+        return [response.latitude,response.longitude]
+
+    @staticmethod
+    def getTZfromLatLon(lat,lon):
+        # https://koalatea.io/timezone-from-location/
+        tf = TimezoneFinder()
+        return tf.timezone_at(lng=lon, lat=lat)
+
+    '''returns "1" or "0"'''
+    @staticmethod
+    def getClientDSTstr(timezone,epoch):
+        return str(int(datetime.datetime.fromtimestamp(epoch, tz.gettz(timezone)).dst().seconds / 3600))
+
     '''return a collection of parseable ISS-PASS rows from heavens above'''
     @staticmethod
     def get_html_return_rows(url):
@@ -100,6 +118,15 @@ class IssPassUtil:
 
         return int(dt1.timestamp()), int(dt2.timestamp()), int(dt3.timestamp())
 
+
+    @staticmethod
+    def message(self,issPass,DSTstr):
+        #    (DST, V_mag, V_startUnix, V_loc1, V_maxUnix, V_loc2, V_endUnix, V_loc3)
+        #    DST is added to from the caller, since it is dependent on client location.
+        if issPass.magnitude:
+            return f'V\0{DSTstr}\0{issPass.magnitude}\0{issPass.tStart}\0{issPass.startAz}\0{issPass.tMax}\0{issPass.maxAz}\0{issPass.tEnd}\0{issPass.endAz}'
+        else:
+            return f'R\0{DSTstr}\0{issPass.tStart}\0{issPass.startAz}\0{issPass.tMax}\0{issPass.maxAz}\0{issPass.tEnd}\0{issPass.endAz}'
 class IssPass:
 
     def __init__(self, _startAz, _maxAz, _endAz, _tStart, _tMax, _tEnd, _magnitude=None):
