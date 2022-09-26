@@ -79,8 +79,7 @@ class IssDataServer:
                 print()
 
 
-
-
+IssDataServer()
 
 
 
