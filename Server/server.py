@@ -61,7 +61,10 @@ class IssDataServer:
 
 
                     if not key in self.datastore:
+                        print(f"Client location ({key}) not in datastore.. retreiving...")
                         self.datastore[key] = locationSpecificISSpassStorage(lat,lon)
+                        print(f"Done! datastore now contains: {self.datastore.keys()}")
+
 
                     nextPass = self.datastore[key].getNextPass()
                     print(f"nextPass: {nextPass}")

@@ -120,7 +120,7 @@ class IssPassUtil:
 
 
     @staticmethod
-    def message(self,issPass,DSTstr):
+    def message(issPass,DSTstr):
         #    (DST, V_mag, V_startUnix, V_loc1, V_maxUnix, V_loc2, V_endUnix, V_loc3)
         #    DST is added to from the caller, since it is dependent on client location.
         if issPass.magnitude:
