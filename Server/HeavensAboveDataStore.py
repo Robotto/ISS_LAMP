@@ -25,7 +25,7 @@ class locationSpecificISSpassStorage:
 '''
 class URLSpecificPassDataStore:
     def __init__(self,url):
-        self.quarantineUntil = 0
+        self.quarantineUntil = datetime.datetime.now()
         self.passURL = url
         self.passList = []
         self.refreshPasses()
