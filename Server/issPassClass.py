@@ -16,8 +16,12 @@ class IssPassUtil:
         # https://pypi.org/project/ip2geotools/
         #usage: IssPassUtil.getLatLonFromIP(ipv4)
 
+        #MAGIC NUMBEEEERS!
+        if '87.62.101.85' in ipv4:
+            return 56.1611,10.2044
+
         response = DbIpCity.get(ipv4, api_key='free')
-        return [response.latitude,response.longitude]
+        return response.latitude,response.longitude
 
     @staticmethod
     def getTZfromLatLon(lat,lon):
@@ -25,10 +29,14 @@ class IssPassUtil:
         tf = TimezoneFinder()
         return tf.timezone_at(lng=lon, lat=lat)
 
-    '''returns "1" or "0"'''
+    '''Return a list of IssPasses from a given Heavens-above URL'''
     @staticmethod
-    def getClientDSTstr(timezone,epoch):
-        return str(int(datetime.datetime.fromtimestamp(epoch, tz.gettz(timezone)).dst().seconds / 3600))
+    def getPassesFromUrl(url):
+        passes=[]
+        for row in IssPassUtil.get_html_return_rows(url):
+            passes.append(IssPassUtil.getPassFromRow(row))
+        return passes
+
 
     '''return a collection of parseable ISS-PASS rows from heavens above'''
     @staticmethod
@@ -81,16 +89,19 @@ class IssPassUtil:
 
         return {"startAz": azAlt1, "maxAz": azAlt2, "endAz": azAlt3, "tStart": startUnix, "tMax": maxUnix, "tEnd": endUnix, "magnitude": mag}
 
-    '''Takes strings from the website about dates and times, and infers real time data'''
+    '''
+    makeTime:
+    Takes strings from the website about dates and times, and infers real time data -
+    ASSUMES THAT HEAVENS ABOVE HAS RETURNED PASS DATA IN UTC
+    '''
     @staticmethod
     def makeTime(dateString, timeStartStr, timeMaxStr, timeEndStr):
 
-        '''check whether the pass occurs next year'''
+        inferredYear = datetime.date.today().year
+        # check whether the pass occurs next year:
         # if we are in december and dStr is a date in january, the pass is in the next year
         if 'Jan' in dateString and datetime.date.today().month == 12:
-            inferredYear = datetime.date.today().year + 1
-        else:
-            inferredYear = datetime.date.today().year
+            inferredYear += 1
 
         dtStr1 = f'{dateString} {inferredYear} {timeStartStr} UTC'
         dtStr2 = f'{dateString} {inferredYear} {timeMaxStr} UTC'
@@ -120,13 +131,16 @@ class IssPassUtil:
 
 
     @staticmethod
-    def message(issPass,DSTstr):
+    def constructMessage(issPass, DSTstr):
         #    (DST, V_mag, V_startUnix, V_loc1, V_maxUnix, V_loc2, V_endUnix, V_loc3)
         #    DST is added to from the caller, since it is dependent on client location.
         if issPass.magnitude:
             return f'V\0{DSTstr}\0{issPass.magnitude}\0{issPass.tStart}\0{issPass.startAz}\0{issPass.tMax}\0{issPass.maxAz}\0{issPass.tEnd}\0{issPass.endAz}'
         else:
             return f'R\0{DSTstr}\0{issPass.tStart}\0{issPass.startAz}\0{issPass.tMax}\0{issPass.maxAz}\0{issPass.tEnd}\0{issPass.endAz}'
+
+
+
 class IssPass:
 
     def __init__(self, _startAz, _maxAz, _endAz, _tStart, _tMax, _tEnd, _magnitude=None):
@@ -146,7 +160,7 @@ class IssPass:
         return False
 
     def __str__(self):
-        return f'ISS pass data, for a {f"visible pass, with magnitude {self.magnitude}," if self.magnitude else "regular (non-visible) pass"} that starts on {datetime.datetime.fromtimestamp(self.tStart, tz=tz.UTC)}'
+        return f'{f"Visible pass, with magnitude {self.magnitude}," if self.magnitude else "Regular (non-visible) pass"} that starts on {datetime.datetime.fromtimestamp(self.tStart, tz=tz.UTC)} (timedelta: {datetime.datetime.fromtimestamp(self.tStart)-datetime.datetime.now()})'
 
     '''
     Do a ten minute check to see if the visible pass isn't a delayed subset of the regular passes
@@ -155,8 +169,8 @@ class IssPass:
     
     Regular pass list will contain ALL passes, including visible passes, making the visible passes a subset of the regular passes..
     
-    Problem: Some visible passes are not visible for the entire pass, thus, in the list of all passes this pass will start earlier, 
-    thus it will have an earlier timestamp and always be selected first.. i try to fix it by offsetting the compare by 10 minutes...
+    Problem: Some visible passes are not visible for the entire pass, thus, the same pass will have an earlier timestamp in the list of regular passes, 
+    and always be selected first.. i try to fix it by offsetting the compare by 10 minutes... which is definitely not enough time orbit the planet, and be confused with another pass ;)
     '''
     def __lt__(self, other):
         return self.tStart + 600 < other.tStart  # if this pass is earlier than the other one. Even after adding ten minutes to own start time

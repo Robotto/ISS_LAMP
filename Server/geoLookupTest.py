@@ -1,7 +1,8 @@
+import time
 
 from dateutil import parser, tz
 import datetime
-
+print(time.time())
 ip='87.62.101.85'
 from ip2geotools.databases.noncommercial import DbIpCity
 response = DbIpCity.get(ip, api_key='free')

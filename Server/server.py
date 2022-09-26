@@ -1,6 +1,6 @@
 import logging
 import socket
-from time import ctime, localtime
+from time import ctime
 from IPy import IP
 
 from issPassClass import IssPassUtil
@@ -22,12 +22,6 @@ class IssDataServer:
         print(f'Started @ {ctime()}')
         logging.info(f'{ctime()}: Started')
 
-        DST = localtime().tm_isdst
-        if DST:
-            print('Daylight savings is active')
-        else:
-            print('Daylight savings is inactive')
-
         print(f'Ready and waiting for inbound on port: {self.incomingPort}')
         logging.info(f'Listening on port: {self.incomingPort}')
 
@@ -48,35 +42,34 @@ class IssDataServer:
             if (data.rstrip() == b'iss?'):
 
                     lat,lon = IssPassUtil.getLatLonFromIP(remoteIP)
-                    timezone = IssPassUtil.getTZfromLatLon(lat,lon)
-
 
                     key=f"{lat},{lon}"
 
                     print()
                     print(f' RX: "{data.strip()}" @ {ctime()} from {remoteIP}')
                     print(f' Coordinates: {lat},{lon}, key={key}')
-                    print(f' Timezone: {timezone}')
-                    print()
-
 
                     if not key in self.datastore:
                         print(f"Client location ({key}) not in datastore.. retreiving...")
                         self.datastore[key] = locationSpecificISSpassStorage(lat,lon)
                         print(f"Done! datastore now contains: {self.datastore.keys()}")
 
-
+                    #Get next pass from the datastore for client location (key):
                     nextPass = self.datastore[key].getNextPass()
                     print(f"nextPass: {nextPass}")
-                    dst = IssPassUtil.getClientDSTstr(timezone,nextPass.tStart)
-                    MESSAGE = IssPassUtil.message(nextPass,dst)
 
-                #    MESSAGE = 'fail at this end, sorry'
-                #    logging.warning('parsing of data failed.')
+                    if nextPass is not False:
+                        #Also: check if DST is active at that location,
+                        #construct the message for the client.
+                        PAYLOAD = IssPassUtil.constructMessage(nextPass, self.datastore[key].isDstAtClientLocation())
 
-                    self.UDPSock.sendto(MESSAGE.encode('ASCII'), (remoteIP, self.remotePort))
-                    print()
-                    print(' TX: %s' % (MESSAGE))
+                    else:
+                        PAYLOAD = 'fail at this end, sorry'
+                        logging.error(f'something went wrong... nextPass does not exist for {key}...perhaps quarantine?')
+
+                    self.UDPSock.sendto(PAYLOAD.encode('ASCII'), (remoteIP, self.remotePort))
+                    logging.info(f'TX: {PAYLOAD}')
+                    print(f' TX: {PAYLOAD}')
                     print('--------------------------------')
                     print()
 
