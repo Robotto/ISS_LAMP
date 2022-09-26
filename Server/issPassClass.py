@@ -1,9 +1,31 @@
 
 import datetime
 from dateutil import parser, tz
+import mechanize
+from bs4 import BeautifulSoup
+# static methods, because utility functions don't really need an instance...
 
-#static methods, because utility functions don't reallt need an instance...
 class IssPassUtil:
+    @staticmethod
+    def getLatLonFromIP(ipv4): #TODO: THIS IS NOT IMPLEMENTED CORRECTLY
+        lat = "56.1609"
+        lon = "10.2042"
+        print(f"WARN: Returning hardcoded lat/lon: [{lat},{lon}] and ignoring IP!")
+        return [lat,lon]
+    '''return a collection of parseable ISS-PASS rows from heavens above'''
+    @staticmethod
+    def get_html_return_rows(url):
+        br = mechanize.Browser()
+        br.set_handle_robots(False)
+        # Get the ISS PASSES pages:
+        print(f'Retrieving list of passes from {url}')
+        html = br.open(url).read()
+
+        soup = BeautifulSoup(html.decode('UTF-8'), features="html5lib")
+        rows = soup.findAll('tr', {"class": "clickableRow"})
+        # print(f"{len(rows)} rows in rows: {rows}")
+        return rows
+
     '''Returns an instance of IssPass built from a row from heavens-above.com'''
     @staticmethod
     def getPassFromRow(row):
@@ -62,7 +84,7 @@ class IssPassUtil:
 
         '''
         Check whether midnight occurs during pass, since this would break using datestring to create all dt objects!
-        if discrepancies are found, shift the parsed timestamps one year forward (they passed midnight)
+        if discrepancies are found, shift the parsed timestamps one day forward (they passed midnight)
         '''
         if dt2 < dt1:
             dt2 += datetime.timedelta(days=1)

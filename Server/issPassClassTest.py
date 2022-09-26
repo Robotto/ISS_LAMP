@@ -1,17 +1,4 @@
-import mechanize
-from bs4 import BeautifulSoup
 
-def get_html_return_rows(url):
-    br = mechanize.Browser()
-    br.set_handle_robots(False)
-    # Get the ISS PASSES pages:
-    print(f'Retrieving list of passes from {url}')
-    html = br.open(url).read()
-
-    soup = BeautifulSoup(html.decode('UTF-8'), features="html5lib")
-    rows = soup.findAll('tr', {"class": "clickableRow"})
-    #print(f"{len(rows)} rows in rows: {rows}")
-    return rows
 
 
 lat = "56.1609"
@@ -24,15 +11,15 @@ VisibleURL = 'https://sardukar.moore.dk/visible.html'
 AllURL = 'https://sardukar.moore.dk/regular.html'
 
 
-from issPassClass import IssPass, IssPassUtil
+from issPassClass import IssPassUtil
 
 visiblePasses = []
-for row in get_html_return_rows(VisibleURL):
+for row in IssPassUtil.get_html_return_rows(VisibleURL):
     newPass = IssPassUtil.getPassFromRow(row)
     visiblePasses.append(newPass)
 
 allpasses = []
-for row in get_html_return_rows(AllURL):
+for row in IssPassUtil.get_html_return_rows(AllURL):
     newPass = IssPassUtil.getPassFromRow(row)
     allpasses.append(newPass)
 
