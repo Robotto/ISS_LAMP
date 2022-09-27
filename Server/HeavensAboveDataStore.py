@@ -85,13 +85,11 @@ class URLSpecificPassDataStore:
             return False
 
     def getNextPass(self):
-        '''
-        print("-----------DEBUG----------")
-        print(f"All passes in store: {len(self.passList)}")
+
+        logging.debug(f"All passes in store: {len(self.passList)}")
         for isspass in self.passList:
-            print(f"{isspass}")
-        print()
-        '''
+            logging.debug(f"{isspass}")
+
         if self.refreshPasses(): #if datastore contains passes.
             return self.passList[0] #return first pass in list. Assuming that they are sorted chronologically.
         else:
