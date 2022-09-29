@@ -43,7 +43,9 @@ class IssDataServer:
 
                     lat,lon = IssPassUtil.getLatLonFromIP(remoteIP)
 
-                    key=f"{lat},{lon}" #TODO: maybe round down to fewer decimals so locations within a radius could share a datastore...
+           	    #Round down to 2 decimals so locations within a 1100 meter radius can share a datastore. 
+		    #https://en.wikipedia.org/wiki/Decimal_degrees
+                    key=f"{lat:.2f},{lon:.2f}"
 
                     print()
                     print(f' RX: "{data.strip()}" @ {ctime()} from {remoteIP}')
