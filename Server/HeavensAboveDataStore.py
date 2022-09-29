@@ -18,7 +18,7 @@ class locationSpecificISSpassStorage:
         self.visiblePasses = URLSpecificPassDataStore(self.visiblePassesURL)
         self.regularPasses = URLSpecificPassDataStore(self.allPassesURL)
 
-        self.timezone = IssPassUtil.getTZfromLatLon(lat, lon)
+        self.timezone = IssPassUtil.getTZfromLatLon(lat, lon) #computationally intensive!
 
     def getNextPass(self):
         nextVisible = self.visiblePasses.getNextPass()

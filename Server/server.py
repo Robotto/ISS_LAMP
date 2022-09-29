@@ -43,7 +43,7 @@ class IssDataServer:
 
                     lat,lon = IssPassUtil.getLatLonFromIP(remoteIP)
 
-                    key=f"{lat},{lon}"
+                    key=f"{lat},{lon}" #TODO: maybe round down to fewer decimals so locations within a radius could share a datastore...
 
                     print()
                     print(f' RX: "{data.strip()}" @ {ctime()} from {remoteIP}')
