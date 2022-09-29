@@ -45,6 +45,7 @@ class IssDataServer:
 
            	    #Round down to 2 decimals so locations within a 1100 meter radius can share a datastore. 
 		    #https://en.wikipedia.org/wiki/Decimal_degrees
+		    #https://xkcd.com/2170/
                     key=f"{lat:.2f},{lon:.2f}"
 
                     print()
