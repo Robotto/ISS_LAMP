@@ -39,21 +39,21 @@ WiFiUDP Udp;
 
 //UDP (robottobox) stuff:
 const unsigned int localPort = 1337;    // local port to listen for UDP packets
-const int NTP_PACKET_SIZE = 128; 		// NTP time stamp is in the first 48 bytes of the message
+const int NTP_PACKET_SIZE = 128;    // NTP time stamp is in the first 48 bytes of the message
 byte packetBuffer[ NTP_PACKET_SIZE ]; //buffer to hold incoming and outgoing packets
 
 //States enum:
 enum machine_states { //default state should be "get_data"
-	get_data,
-	display_setup,
-	countdown,
-	regular_start,
-	regular_underway,
-	visible_start,
-	visible_before_max,
-	print_end_info,
-	visible_after_max,
-	end_of_pass,
+  get_data,
+  display_setup,
+  countdown,
+  regular_start,
+  regular_underway,
+  visible_start,
+  visible_before_max,
+  print_end_info,
+  visible_after_max,
+  end_of_pass,
   override_state, //the override state happens when not in normal_operations_control_state 
   overridden_state
 };
@@ -205,9 +205,9 @@ void setup() {
   });
 
   ArduinoOTA.onEnd([]() {
-  	VFD.clear();
-  	VFD.sendString("OTA End");
-  	reset();
+    VFD.clear();
+    VFD.sendString("OTA End");
+    reset();
   });
 
   ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
@@ -322,8 +322,9 @@ void statemachine(){
         delay(1000);
         sendISSpacket(robottobox); //ask robottobox for new iss data
         VFD.sendString("ISS TX -> Sardukar");
+        delay(1000);
         UDPwait(true);
-        delay(500);
+        //delay(500);
         VFD.sendString("   RX! :D");
         delay(500);
         handle_ISS_udp();
@@ -363,7 +364,7 @@ void statemachine(){
         if (passVisible) displaybuffer+=" M:"+passMagnitude;
         VFD.sendString(displaybuffer);
 
-        clock();
+        _clock();
 
         if(currentEpoch+1>=passStartEpoch)
             {
@@ -383,7 +384,7 @@ void statemachine(){
         break;
 
   case regular_underway: //regular pass in progress
-        clock();
+        _clock();
         if(currentEpoch+1>=passEndEpoch) state=end_of_pass;
         break;
 
@@ -450,8 +451,8 @@ void statemachine(){
        state=overridden_state;
        break;
 
-  case overridden_state: //state is exited in clock() @ 7am local time
-        clock();
+  case overridden_state: //state is exited in _clock() @ 7am local time
+        _clock();
         break;
   }
 
@@ -478,7 +479,7 @@ C:::::C                L:::::L               O:::::O     O:::::OC:::::C         
 
 //void(* resetFunc) () = 0; //declare reset function @ address 0
 
-void clock()
+void _clock()
 {
 
 
@@ -531,7 +532,7 @@ void errorclock()
     currentEpoch++;
 //    currentEpoch+=((millis()-lastmillis)/1000); //add  a second or more to the current epoch
     lastmillis=millis();
-    clock();
+    _clock();
     ArduinoOTA.handle();
     server.handleClient();
     if (currentEpoch>epochAtError+30) reset(); //reset after 30 seconds
@@ -692,9 +693,9 @@ int UDPretries = 0;
 
 while (!Udp.parsePacket())
   {
-  delay(100);
+  delay(500);
   UDPretryDelay++;
-  if (UDPretryDelay==50)  //if 5 seconds has passed without an answer
+  if (UDPretryDelay==30)  //if 15 seconds has passed without an answer
     {
       //TODO: refresh NTP IP if no response for "a while"... 
       if(ISSorNTP) sendISSpacket(robottobox);
@@ -703,7 +704,7 @@ while (!Udp.parsePacket())
       UDPretryDelay=0;
       //VFD.sendChar('.');
     }
-  if(UDPretries==10) //after 50 seconds
+  if(UDPretries==4) //after 60 seconds
     {
       VFD.clear();
       VFD.sendString("  UDP_RX");
@@ -982,32 +983,32 @@ uint32_t Wheel(byte WheelPos) {
 
 void fade(bool upDown, uint8_t wait)
 {
-	int i,j;
-	if(upDown)
-	{
-		for(j=0; j<255;j++)
-		{
-			for(i=0; i<strip.numPixels(); i++)
-			{
-				strip.setPixelColor(i,strip.Color(j,j,j));
-			}
-			strip.show();
-			delay(wait);
-		}
-	}
+  int i,j;
+  if(upDown)
+  {
+    for(j=0; j<255;j++)
+    {
+      for(i=0; i<strip.numPixels(); i++)
+      {
+        strip.setPixelColor(i,strip.Color(j,j,j));
+      }
+      strip.show();
+      delay(wait);
+    }
+  }
 
-	else
-	{
-		for(j=254; j>=0;j--)
-		{
-			for(i=0;i<strip.numPixels(); i++)
-			{
-				strip.setPixelColor(i,strip.Color(j,j,j));
-			}
-			strip.show();
-			delay(wait);
-		}
-	}
+  else
+  {
+    for(j=254; j>=0;j--)
+    {
+      for(i=0;i<strip.numPixels(); i++)
+      {
+        strip.setPixelColor(i,strip.Color(j,j,j));
+      }
+      strip.show();
+      delay(wait);
+    }
+  }
 }
 
 void http_set_mode() {
