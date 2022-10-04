@@ -1,7 +1,9 @@
+import datetime
 import logging
 import socket
 from time import ctime
 from IPy import IP
+
 
 from issPassClass import IssPassUtil
 from HeavensAboveDataStore import locationSpecificISSpassStorage
@@ -43,9 +45,9 @@ class IssDataServer:
 
                     lat,lon = IssPassUtil.getLatLonFromIP(remoteIP)
 
-           	    #Round down to 2 decimals so locations within a 1100 meter radius can share a datastore. 
-		    #https://en.wikipedia.org/wiki/Decimal_degrees
-		    #https://xkcd.com/2170/
+                    #Round down to 2 decimals so locations within a 1100 meter radius can share a datastore.
+                    #https://en.wikipedia.org/wiki/Decimal_degrees
+                    #https://xkcd.com/2170/
                     key=f"{lat:.2f},{lon:.2f}"
 
                     print()
@@ -75,6 +77,16 @@ class IssDataServer:
                     print(f' TX: {PAYLOAD}')
                     print('--------------------------------')
                     print()
+
+                    self.prune() #Get rid of old data.
+
+    def prune(self):
+        #logging.info(f"Pruning!")
+        for latLonKey in self.datastore.keys(): #Run through all keys in datastore
+            if self.datastore[latLonKey].isStale(): #if the location specific datastore hasn't been used in n days...ss
+                logging.info(f"{latLonKey} localised datastore is stale! Pruning...")
+                self.datastore.pop(latLonKey) #remove from store
+        #logging.info(f"Done Pruning!")
 
 
 IssDataServer()

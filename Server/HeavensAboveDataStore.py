@@ -20,6 +20,8 @@ class locationSpecificISSpassStorage:
 
         self.timezone = IssPassUtil.getTZfromLatLon(lat, lon) #computationally intensive!
 
+        self.lastCallWasAt = datetime.datetime.now()
+
     def getNextPass(self):
         nextVisible = self.visiblePasses.getNextPass()
         nextRegular = self.regularPasses.getNextPass()
@@ -42,6 +44,10 @@ class locationSpecificISSpassStorage:
     '''returns "1" or "0"'''
     def isDstAtClientLocation(self):
         return str(int(datetime.datetime.now(tz.gettz(self.timezone)).dst().seconds / 3600))
+        # if datastore hasn't been asked for a pass in n days, it's stale and should probably be discarded
+
+    def isStale(self):
+        return datetime.datetime.now() - self.lastCallWasAt > datetime.timedelta(days=7)
 
 
 ''' 
@@ -61,14 +67,14 @@ class URLSpecificPassDataStore:
         if len(self.passList) > 0: #list will be empty on first run.
             for issPass in self.passList:
                 if issPass.tStart < int(time.time()): #has this pass already started?
-                    #print(f"DEBUG: removing {issPass}")
+                    logging.info(f'{issPass}')
                     self.passList.remove(issPass)
 
         #Empty list?
         if len(self.passList) < 1:
             if datetime.datetime.now() < self.quarantineUntil: #if pass list is empty, but quarantine is active
-                print(f'Error! pass list for url: {self.passURL} is empty, but not enough time has passed since last query!')
-                logging.warning(f'Pass list for {self.passURL} is empty, but quarantine does not end before {self.quarantineUntil} (Timedelta: {self.quarantineUntil-datetime.datetime.now()}')
+                print(f'WARNING! pass list for url: {self.passURL} is empty, but not enough time has passed since last query!')
+                logging.warning(f'Pass list for {self.passURL} is empty, but quarantine does not end before {self.quarantineUntil} (Timedelta: {self.quarantineUntil-datetime.datetime.now()})')
                 return False
             else:
                 for newPass in IssPassUtil.getPassesFromUrl(self.passURL):
@@ -86,13 +92,14 @@ class URLSpecificPassDataStore:
 
     def getNextPass(self):
 
-        logging.debug(f"All passes in store: {len(self.passList)}")
-        for isspass in self.passList:
-            logging.debug(f"{isspass}")
+        logging.debug(f"All passes in store (before refresh): {len(self.passList)}")
+        for index,isspass in enumerate(self.passList, start=1):
+            logging.debug(f"#{index}: {isspass}")
+
+        self.lastCallWasAt = datetime.datetime.now()
 
         if self.refreshPasses(): #if datastore contains passes.
             return self.passList[0] #return first pass in list. Assuming that they are sorted chronologically.
         else:
             return False
-
 
