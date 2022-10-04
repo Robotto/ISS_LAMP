@@ -10,7 +10,7 @@ My take on the ISS lamp, now based on an ESP8266 (wemos D1 mini). I did a writeu
 
 The idea is to have a "stand-alone" unit which only needs power and wifi to work
 
-The 'client' is an ESP8266 (wemos D1 mini) which uses an NTP lookup and a UDP connection to get data about the International Space Station,
+The 'client' is an ESP8266 (nodemcuv2) which uses an NTP lookup and a UDP connection to get data about the International Space Station,
 which is parsed (upon request) from heavens-above.com by the 'Server' side python script
 
 Both visible and non-visible ("regular") passes are parsed:
