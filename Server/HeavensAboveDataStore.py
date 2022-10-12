@@ -23,6 +23,7 @@ class locationSpecificISSpassStorage:
         self.lastCallWasAt = datetime.datetime.now()
 
     def getNextPass(self):
+        self.lastCallWasAt = datetime.datetime.now()
         nextVisible = self.visiblePasses.getNextPass()
         nextRegular = self.regularPasses.getNextPass()
 
