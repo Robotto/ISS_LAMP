@@ -137,8 +137,7 @@ S:::::::::::::::SS   ee:::::::::::::e          tt:::::::::::tt  uu::::::::uu:::u
 
 void setup() {
   //Serial.begin(115200);
-  WiFi.mode(WIFI_OFF); //maybe a disconnect will help the device resume after reset?
-
+  
   WiFi.hostname("ISS_LAMP");
   //Local intialization. Once its business is done, there is no need to keep it around
   WiFiManager wifiManager;
@@ -167,6 +166,11 @@ void setup() {
   //  PWM_ramp(true);
     VFD.clear();
     VFD.sendString("Awaiting wifi connection...");
+
+//should fix the wonky reconnect-at-reboot issue.. 
+  wifiManager.setCleanConnect(true);
+  wifiManager.setConnectRetries(3); 
+
 
   //set callback that gets called when connecting to previous WiFi fails, and enters Access Point mode
   wifiManager.setAPCallback(configModeCallback);
