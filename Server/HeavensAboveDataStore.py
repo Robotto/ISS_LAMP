@@ -67,8 +67,8 @@ class URLSpecificPassDataStore:
         #remove passes that ended in the past
         if len(self.passList) > 0: #list will be empty on first run.
             for issPass in self.passList:
-                if issPass.tStart < int(time.time()): #has this pass already started?
-                    logging.info(f'{issPass}')
+                if not issPass.startsInTheFuture(): #has this pass already started?
+                    logging.info(f'REMOVING old pass: {issPass}')
                     self.passList.remove(issPass)
 
         #Empty list?
@@ -82,7 +82,8 @@ class URLSpecificPassDataStore:
                     if newPass.tStart > int(time.time()): #Does this newly parsed pass start in the future?
                         self.passList.append(newPass)
                 self.quarantineUntil = datetime.datetime.now() + datetime.timedelta(days=1)
-                logging.info(f"Quarantine for {self.passURL} is now active for 24 Hours.")
+                logging.info(f'Quarantine for {f"Visible passes" if "showAll=f" in self.passURL else "Regular passes"}, (url: {self.passURL}) is now active for 24 Hours.')
+
 
         # check to see if the refresh actually got passes in the future.
         if len(self.passList)>0:

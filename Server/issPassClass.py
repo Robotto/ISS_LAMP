@@ -159,8 +159,21 @@ class IssPass:
             return True
         return False
 
+    def getStartTimestampUTC(self):
+        return datetime.datetime.fromtimestamp(self.tStart, tz=tz.UTC)
+
+    def getStartTimedeltaUTC(self):
+        return self.getStartTimestampUTC()-datetime.datetime.now(datetime.timezone.utc)
+
+    def startsInTheFuture(self):
+        if self.getStartTimedeltaUTC().total_seconds()>0:
+            return True
+        else:
+            return False
+
+
     def __str__(self):
-        return f'{f"Visible pass, with magnitude {self.magnitude}," if self.magnitude else "Regular (non-visible) pass"} that starts on {datetime.datetime.fromtimestamp(self.tStart, tz=tz.UTC)} (timedelta: {datetime.datetime.fromtimestamp(self.tStart)-datetime.datetime.now()})'
+        return f'{f"Visible pass, with magnitude {self.magnitude}," if self.magnitude else "Regular (non-visible) pass"} that starts on {self.getStartTimestampUTC()} (timedelta: {self.getStartTimedeltaUTC()})'
 
     '''
     Do a ten minute check to see if the visible pass isn't a delayed subset of the regular passes
