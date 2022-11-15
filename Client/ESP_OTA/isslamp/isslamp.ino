@@ -137,6 +137,7 @@ S:::::::::::::::SS   ee:::::::::::::e          tt:::::::::::tt  uu::::::::uu:::u
 
 void setup() {
   //Serial.begin(115200);
+  
   WiFi.hostname("ISS_LAMP");
   //Local intialization. Once its business is done, there is no need to keep it around
   WiFiManager wifiManager;
@@ -166,10 +167,15 @@ void setup() {
     VFD.clear();
     VFD.sendString("Awaiting wifi connection...");
 
+//should fix the wonky reconnect-at-reboot issue.. 
+  wifiManager.setCleanConnect(true);
+  wifiManager.setConnectRetries(3); 
+
+
   //set callback that gets called when connecting to previous WiFi fails, and enters Access Point mode
   wifiManager.setAPCallback(configModeCallback);
   
-    wifiManager.setConnectTimeout(10); //try to connect to known wifis ten seconds 
+    wifiManager.setConnectTimeout(30); //try to connect to known wifis for 30 seconds 
   
     //fetches ssid and pass and tries to connect
     //if it does not connect it starts an access point with the specified name
@@ -206,7 +212,8 @@ void setup() {
 
   ArduinoOTA.onEnd([]() {
     VFD.clear();
-    VFD.sendString("OTA End");
+    VFD.sendString("OTA Done");
+    delay(500);
     reset();
   });
 
@@ -939,17 +946,32 @@ void timekeeper()
 void reset()
 {
     VFD.clear();
-    VFD.sendString("Reset in 3");
+    VFD.sendString("BRACE FOR RESET!");
     delay(1000);
-    VFD.backspace(1);
-    VFD.sendChar('2');
+    WiFi.mode(WIFI_OFF);
+    VFD.clear();
+    VFD.sendString("Reactor offline.     3");
     delay(1000);
-    VFD.backspace(1);
-    VFD.sendChar('1');
+    VFD.clear();
+    VFD.sendString("Sensors offline.     2");
     delay(1000);
-    VFD.backspace(5);
-    VFD.sendString("!    ");
+    VFD.clear();
+    VFD.sendString("Weapons offline.     1");
+    delay(1000);
+    VFD.clear();
+    VFD.sendString("Flushing coolant.    0");
+    delay(1000);
+    VFD.cursorMode(VFD_CURSOR_FLASHING_BLOCK);
+    VFD.flashyString("So long...");
+    delay(500);
+    VFD.clear();
+    VFD.flashyString("And...");
+    delay(500);
+    VFD.clear();
+    VFD.flashyString("Thanks for all the fish <3");
+
     ESP.restart();
+    //ESP.reset();
 }
 
 void rainbowCycle(uint8_t wait) {

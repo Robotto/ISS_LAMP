@@ -85,6 +85,11 @@ void VFD::sendChar(unsigned char databyte)
   setDataportAndSend(databyte);
 }
 
+void VFD::backspace()
+{
+    sendChar(0x08);
+}
+
 void VFD::backspace(unsigned int backspaces)
 {
     for(int i=0;i<backspaces;i++) sendChar(0x08);
@@ -231,5 +236,3 @@ void VFD::dancingSmileyForever()
     }
 
 }
-
-

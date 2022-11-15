@@ -48,6 +48,7 @@ public:
 
     //writing:
     void sendChar(unsigned char databyte);
+    void backspace();
     void backspace(unsigned int backspaces);
     void sendString(String inputstring);
     void flashyString(String inputstring);
