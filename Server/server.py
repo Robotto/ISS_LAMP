@@ -43,6 +43,8 @@ class IssDataServer:
 
             if (data.rstrip() == b'iss?'):
 
+                    self.prune() #Get rid of old data.
+
                     lat,lon = IssPassUtil.getLatLonFromIP(remoteIP)
 
                     # Round down to 2 decimals so locations within a 1100ish meter radius can share a datastore.
@@ -78,7 +80,6 @@ class IssDataServer:
                     print('--------------------------------')
                     print()
 
-                    self.prune() #Get rid of old data.
 
     def prune(self):
         #logging.info(f"Pruning!")
