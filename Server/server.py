@@ -1,12 +1,10 @@
-import datetime
 import logging
 import socket
 from time import ctime
 from IPy import IP
-
-
-from issPassClass import IssPassUtil
 from HeavensAboveDataStore import locationSpecificISSpassStorage
+from ip2geotools.databases.noncommercial import DbIpCity
+
 
 
 class IssDataServer:
@@ -45,7 +43,7 @@ class IssDataServer:
 
                     self.prune() #Get rid of old data.
 
-                    lat,lon = IssPassUtil.getLatLonFromIP(remoteIP)
+                    lat,lon = IssDataServer.getLatLonFromIP(remoteIP)
 
                     # Round down to 2 decimals so locations within a 1100ish meter radius can share a datastore.
                     # https://en.wikipedia.org/wiki/Decimal_degrees
@@ -68,7 +66,7 @@ class IssDataServer:
                     if nextPass is not False:
                         #Also: check if DST is active at that location,
                         #construct the message for the client.
-                        PAYLOAD = IssPassUtil.constructMessage(nextPass, self.datastore[key].isDstAtClientLocation())
+                        PAYLOAD = nextPass.constructMessage(self.datastore[key].isDstAtClientLocation())
 
                     else:
                         PAYLOAD = 'fail at this end, sorry'
@@ -80,6 +78,19 @@ class IssDataServer:
                     print('--------------------------------')
                     print()
 
+    @staticmethod
+    def getLatLonFromIP(ipv4):
+        # https://iplocation.io/
+        # https://db-ip.com/<IPV4>
+        # https://pypi.org/project/ip2geotools/
+        #usage: IssPassUtil.getLatLonFromIP(ipv4)
+
+        #MAGIC NUMBEEEERS!
+        if '87.62.101.85' in ipv4:
+            return 56.16097,10.20394
+
+        response = DbIpCity.get(ipv4, api_key='free')
+        return response.latitude,response.longitude
 
     def prune(self):
         #logging.info(f"Pruning!")

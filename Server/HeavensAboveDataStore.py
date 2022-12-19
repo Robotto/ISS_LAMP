@@ -1,8 +1,11 @@
-from issPassClass import IssPassUtil
 import datetime
-import time
 import logging
 from dateutil import tz
+from timezonefinder import TimezoneFinder
+import mechanize
+from bs4 import BeautifulSoup
+from issPassClass import IssPass
+
 
 '''
 locationSpecificISSpassStorage - A store for each client location.
@@ -18,7 +21,9 @@ class locationSpecificISSpassStorage:
         self.visiblePasses = URLSpecificPassDataStore(self.visiblePassesURL)
         self.regularPasses = URLSpecificPassDataStore(self.allPassesURL)
 
-        self.timezone = IssPassUtil.getTZfromLatLon(lat, lon) #computationally intensive!
+        # https://koalatea.io/timezone-from-location/
+        tf = TimezoneFinder()
+        self.timezone = tf.timezone_at(lng=lon, lat=lat)
 
         self.lastCallWasAt = datetime.datetime.now()
 
@@ -45,8 +50,8 @@ class locationSpecificISSpassStorage:
     '''returns "1" or "0"'''
     def isDstAtClientLocation(self):
         return str(int(datetime.datetime.now(tz.gettz(self.timezone)).dst().seconds / 3600))
-        # if datastore hasn't been asked for a pass in n days, it's stale and should probably be discarded
 
+    # if datastore hasn't been asked for a pass in n days, it's stale and should probably be discarded
     def isStale(self):
         return datetime.datetime.now() - self.lastCallWasAt > datetime.timedelta(days=7)
 
@@ -78,8 +83,9 @@ class URLSpecificPassDataStore:
                 logging.warning(f'Pass list for {self.passURL} is empty, but quarantine does not end before {self.quarantineUntil} (Timedelta: {self.quarantineUntil-datetime.datetime.now()})')
                 return False
             else:
-                for newPass in IssPassUtil.getPassesFromUrl(self.passURL):
-                    if newPass.tStart > int(time.time()): #Does this newly parsed pass start in the future?
+                for row in URLSpecificPassDataStore.get_html_return_rows(self.passURL):
+                    newPass = IssPass(row)
+                    if newPass.startsInTheFuture():
                         self.passList.append(newPass)
                 self.quarantineUntil = datetime.datetime.now() + datetime.timedelta(days=1)
                 logging.info(f'Quarantine for {f"Visible passes" if "showAll=f" in self.passURL else "Regular passes"}, (url: {self.passURL}) is now active for 24 Hours.')
@@ -104,4 +110,24 @@ class URLSpecificPassDataStore:
             return self.passList[0] #return first pass in list. Assuming that they are sorted chronologically.
         else:
             return False
+
+    '''return a collection of parseable ISS-PASS rows from heavens above'''
+    @staticmethod
+    def get_html_return_rows(url):
+        br = mechanize.Browser()
+        br.set_handle_robots(False)
+        # Get the ISS PASSES pages:
+        print(f'Retrieving list of passes from {url}')
+        html = br.open(url).read()
+
+        soup = BeautifulSoup(html.decode('UTF-8'), features="html5lib")
+        rows = soup.findAll('tr', {"class": "clickableRow"})
+        # print(f"{len(rows)} rows in rows: {rows}")
+        return rows
+
+
+
+
+
+
 
