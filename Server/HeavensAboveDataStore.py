@@ -67,7 +67,14 @@ class URLSpecificPassDataStore:
         self.passList = []
         self.refreshPasses()
 
+    def log_datastore(self,info):
+        logging.debug(f"All passes in store ({info}): {len(self.passList)}")
+        for index,isspass in enumerate(self.passList, start=1):
+            logging.debug(f"#{index}: {isspass}")
+
     def refreshPasses(self):
+
+        self.log_datastore("before refresh")
 
         #remove passes that ended in the past
         if len(self.passList) > 0: #list will be empty on first run.
@@ -81,6 +88,7 @@ class URLSpecificPassDataStore:
             if datetime.datetime.now() < self.quarantineUntil: #if pass list is empty, but quarantine is active
                 print(f'WARNING! pass list for url: {self.passURL} is empty, but not enough time has passed since last query!')
                 logging.warning(f'Pass list for {self.passURL} is empty, but quarantine does not end before {self.quarantineUntil} (Timedelta: {self.quarantineUntil-datetime.datetime.now()})')
+                self.log_datastore("after refresh")
                 return False
             else:
                 for row in URLSpecificPassDataStore.get_html_return_rows(self.passURL):
@@ -90,22 +98,21 @@ class URLSpecificPassDataStore:
                 self.quarantineUntil = datetime.datetime.now() + datetime.timedelta(days=1)
                 logging.info(f'Quarantine for {f"Visible passes" if "showAll=f" in self.passURL else "Regular passes"}, (url: {self.passURL}) is now active for 24 Hours.')
 
+        self.log_datastore("after refresh")
 
         # check to see if the refresh actually got passes in the future.
         if len(self.passList)>0:
             return True
         else:
-            logging.error(f"Pass list for {self.passURL} is empty. And Refreshing it didn't work...")
+            logging.error(f"Pass list for {self.passURL} is empty, but refreshing it didn't work...")
             return False
 
+
+
+
+
     def getNextPass(self):
-
-        logging.debug(f"All passes in store (before refresh): {len(self.passList)}")
-        for index,isspass in enumerate(self.passList, start=1):
-            logging.debug(f"#{index}: {isspass}")
-
         self.lastCallWasAt = datetime.datetime.now()
-
         if self.refreshPasses(): #if datastore contains passes.
             return self.passList[0] #return first pass in list. Assuming that they are sorted chronologically.
         else:
