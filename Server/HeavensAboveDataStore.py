@@ -78,7 +78,7 @@ class URLSpecificPassDataStore:
 
         #remove passes that ended in the past
         if len(self.passList) > 0: #list will be empty on first run.
-            for issPass in self.passList:
+            for issPass in self.passList[:]: #iterate through a copy of the list
                 if not issPass.startsInTheFuture(): #has this pass already started?
                     logging.info(f'REMOVING old pass: {issPass}')
                     self.passList.remove(issPass)
