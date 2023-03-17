@@ -70,7 +70,10 @@ class URLSpecificPassDataStore:
     def log_datastore(self,info):
         logging.debug(f"All passes in store ({info}): {len(self.passList)}")
         for index,isspass in enumerate(self.passList, start=1):
-            logging.debug(f"#{index}: {isspass}")
+            if not isspass.startsInTheFuture():
+                logging.warning(f"#{index}: {isspass}")
+            else:
+                logging.debug(f"#{index}: {isspass}")
 
     def refreshPasses(self):
 
