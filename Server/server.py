@@ -95,7 +95,7 @@ class IssDataServer:
     def prune(self):
         #logging.info(f"Pruning!")
         for latLonKey in self.datastore.keys(): #Run through all keys in datastore
-            if self.datastore[latLonKey].isStale(): #if the location specific datastore hasn't been used in n days...ss
+            if self.datastore[latLonKey].isStale(): #if the location specific datastore hasn't been used in 7 days...
                 logging.info(f"{latLonKey} localised datastore is stale! Pruning...")
                 self.datastore.pop(latLonKey) #remove from store
         #logging.info(f"Done Pruning!")
