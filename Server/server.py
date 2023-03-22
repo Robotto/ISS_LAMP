@@ -73,8 +73,12 @@ class IssDataServer:
                         logging.error(f'something went wrong... nextPass does not exist for {key}...perhaps quarantine?')
 
                     self.UDPSock.sendto(PAYLOAD.encode('ASCII'), (remoteIP, self.remotePort))
-                    logging.info(f'TX: {PAYLOAD}')
-                    print(f' TX: {PAYLOAD}')
+
+
+                    logging.info(f'TX: {PAYLOAD}'.encode('ASCII'))
+                    logging.info('--------------------------------')
+
+                    print(f'TX: {PAYLOAD}')
                     print('--------------------------------')
                     print()
 
