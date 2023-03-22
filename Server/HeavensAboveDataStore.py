@@ -51,7 +51,7 @@ class locationSpecificISSpassStorage:
     def isDstAtClientLocation(self):
         return str(int(datetime.datetime.now(tz.gettz(self.timezone)).dst().seconds / 3600))
 
-    # if datastore hasn't been asked for a pass in n days, it's stale and should probably be discarded
+    # if datastore hasn't been asked for a pass in 7 days, it's stale and should probably be discarded
     def isStale(self):
         return datetime.datetime.now() - self.lastCallWasAt > datetime.timedelta(days=7)
 
@@ -77,7 +77,7 @@ class URLSpecificPassDataStore:
 
     def refreshPasses(self):
 
-        self.log_datastore("before refresh")
+        #self.log_datastore("before refresh")
 
         #remove passes that ended in the past
         if len(self.passList) > 0: #list will be empty on first run.
@@ -101,7 +101,7 @@ class URLSpecificPassDataStore:
                 self.quarantineUntil = datetime.datetime.now() + datetime.timedelta(days=1)
                 logging.info(f'Quarantine for {f"Visible passes" if "showAll=f" in self.passURL else "Regular passes"}, (url: {self.passURL}) is now active for 24 Hours.')
 
-        self.log_datastore("after refresh")
+        #self.log_datastore("after refresh")
 
         # check to see if the refresh actually got passes in the future.
         if len(self.passList)>0:
