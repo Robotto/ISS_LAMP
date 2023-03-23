@@ -13,6 +13,7 @@ Stores two instances of the URLspecificPassDataStore; One for visible passes and
 '''
 class locationSpecificISSpassStorage:
 
+
     def __init__(self, lat, lon):
         # not providing heavens-above with a tz gives you the data in utc time.. which is what you want. :)
         self.visiblePassesURL = 'http://heavens-above.com/PassSummary.aspx?showAll=f&satid=25544&lat=%s&lng=%s&alt=12' % (lat, lon)
@@ -61,15 +62,20 @@ URLSpecificPassDataStore - Stores passes from one specific heavens-above url
 Automagically refreshes passes (if needed) when asked for next pass. 
 '''
 class URLSpecificPassDataStore:
+    DEBUG_VERBOSE = True
+
     def __init__(self,url):
         self.quarantineUntil = datetime.datetime.now()
         self.passURL = url
-        self.visiblePassStore = True if "showAll=f" in self.passURL else False
+        self.passTypeStored = 'VISIBLE' if 'showAll=f' in self.passURL else 'REGULAR'
         self.passList = []
-        self.refreshPasses()
+        #self.refreshPasses()
 
     def log_datastore(self,info):
-        logging.debug(f'All passes in {"VISIBLE" if self.visiblePassStore else "REGULAR"} store {info}: {len(self.passList)}')
+        logging.info(f'REFRESH:All passes in URLSpecificPassDataStore for {self.passTypeStored} passes from {self.passURL} {info}: {len(self.passList)}')
+
+        if not self.DEBUG_VERBOSE:
+            return
         for index,isspass in enumerate(self.passList, start=1):
             if not isspass.startsInTheFuture():
                 logging.warning(f"#{index}: {isspass}")
@@ -79,36 +85,43 @@ class URLSpecificPassDataStore:
     def refreshPasses(self):
 
         self.log_datastore("before refresh")
+        listWasModified = False
 
         #remove passes that ended in the past
         if len(self.passList) > 0: #list will be empty on first run.
+
             for issPass in self.passList[:]: #iterate through a copy of the list, so modifications to the list won't mess with the for loop.
                 if not issPass.startsInTheFuture(): #has this pass already started?
                     logging.info(f'REMOVING old pass: {issPass}')
                     self.passList.remove(issPass)
+                    listWasModified=True
 
-        #first run? Empty list? 
+        #first run? Empty list?
         if len(self.passList) < 1:
             if datetime.datetime.now() < self.quarantineUntil: #if pass list is empty, but quarantine is active
-                print(f'Oh no! pass list for url: {self.passURL} is empty, but not enough time has passed since last query!')
+                print(f'Oh no! pass list for url: {self.passURL} ({self.passTypeStored} passes) is empty, but not enough time has passed since last query!')
                 logging.error(f'Pass list for {self.passURL} is empty, but quarantine does not end before {self.quarantineUntil} (Timedelta: {self.quarantineUntil-datetime.datetime.now()})')
-                self.log_datastore("after refresh")
+                logging.info(f'REFRESH:{self.passTypeStored}: Halted due to quarantine.')
                 return False
             else:
+                logging.warning(f'EMPTY PASS LIST for url: {self.passURL}. Refreshing!')
                 for row in URLSpecificPassDataStore.get_html_return_rows(self.passURL):
                     newPass = IssPass(row)
                     if newPass.startsInTheFuture():
                         self.passList.append(newPass)
+                        listWasModified=True
                 self.quarantineUntil = datetime.datetime.now() + datetime.timedelta(days=1)
-                logging.warning(f'Quarantine for {f"Visible passes" if self.visiblePassStore else "Regular passes"}, (url: {self.passURL}) is now active for 24 Hours.')
+                logging.warning(f'Quarantine for {self.passTypeStored} PASSES, (url: {self.passURL}) is now active for 24 Hours.')
 
-        self.log_datastore("after refresh")
-
+        if listWasModified:
+            self.log_datastore("after refresh")
+        else:
+            logging.info(f'REFRESH:{self.passTypeStored}: Getting new pass data is not neccesary, we got plenty of data right here!')
         # check to see if the refresh actually got passes in the future.
         if len(self.passList)>0:
             return True
         else:
-            logging.error(f"Pass list for {self.passURL} is empty, but refreshing it didn't work...")
+            logging.error(f"{self.passTypeStored}: Empty pass list for {self.passURL}, but refreshing it didn't work...")
             return False
 
 

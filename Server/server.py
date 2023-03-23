@@ -6,7 +6,6 @@ from HeavensAboveDataStore import locationSpecificISSpassStorage
 from ip2geotools.databases.noncommercial import DbIpCity
 
 
-
 class IssDataServer:
 
 
@@ -20,10 +19,10 @@ class IssDataServer:
         logging.basicConfig(filename='ISS.log', level=logging.DEBUG)
 
         print(f'Started @ {ctime()}')
-        logging.info(f'{ctime()}: Started')
+        logging.info(f'STARTUP:{ctime()}: Started')
 
         print(f'Ready and waiting for inbound on port: {self.incomingPort}')
-        logging.info(f'Listening on port: {self.incomingPort}')
+        logging.info(f'STARTUP:Listening on port: {self.incomingPort}')
 
         self.datastore={}
 
@@ -36,7 +35,7 @@ class IssDataServer:
 
             remoteIP = IP(addr[0]).strNormal()  # convert address of packet origin to string
 
-            logging.info(f'{ctime()}: RX: \"{data.rstrip()}\" from  {remoteIP}')
+            logging.info(f'INCOMING:{ctime()}: RX: \"{data.rstrip()}\" from  {remoteIP}')
 
 
             if (data.rstrip() == b'iss?'):
@@ -75,7 +74,7 @@ class IssDataServer:
                     self.UDPSock.sendto(PAYLOAD.encode('ASCII'), (remoteIP, self.remotePort))
 
 
-                    logging.info(f'TX: {PAYLOAD}'.encode('ASCII'))
+                    logging.info(f'TX:{PAYLOAD}'.encode('ASCII'))
                     logging.info('--------------------------------')
 
                     print(f'TX: {PAYLOAD}')
