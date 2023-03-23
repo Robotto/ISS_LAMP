@@ -64,11 +64,12 @@ class URLSpecificPassDataStore:
     def __init__(self,url):
         self.quarantineUntil = datetime.datetime.now()
         self.passURL = url
+        self.visiblePassStore = True if "showAll=f" in self.passURL else False
         self.passList = []
         self.refreshPasses()
 
     def log_datastore(self,info):
-        logging.debug(f"All passes in store ({info}): {len(self.passList)}")
+        logging.debug(f'All passes in {"VISIBLE" if self.visiblePassStore else "REGULAR"} store {info}: {len(self.passList)}')
         for index,isspass in enumerate(self.passList, start=1):
             if not isspass.startsInTheFuture():
                 logging.warning(f"#{index}: {isspass}")
@@ -77,20 +78,20 @@ class URLSpecificPassDataStore:
 
     def refreshPasses(self):
 
-        #self.log_datastore("before refresh")
+        self.log_datastore("before refresh")
 
         #remove passes that ended in the past
         if len(self.passList) > 0: #list will be empty on first run.
-            for issPass in self.passList[:]: #iterate through a copy of the list
+            for issPass in self.passList[:]: #iterate through a copy of the list, so modifications to the list won't mess with the for loop.
                 if not issPass.startsInTheFuture(): #has this pass already started?
                     logging.info(f'REMOVING old pass: {issPass}')
                     self.passList.remove(issPass)
 
-        #Empty list?
+        #first run? Empty list? 
         if len(self.passList) < 1:
             if datetime.datetime.now() < self.quarantineUntil: #if pass list is empty, but quarantine is active
-                print(f'WARNING! pass list for url: {self.passURL} is empty, but not enough time has passed since last query!')
-                logging.warning(f'Pass list for {self.passURL} is empty, but quarantine does not end before {self.quarantineUntil} (Timedelta: {self.quarantineUntil-datetime.datetime.now()})')
+                print(f'Oh no! pass list for url: {self.passURL} is empty, but not enough time has passed since last query!')
+                logging.error(f'Pass list for {self.passURL} is empty, but quarantine does not end before {self.quarantineUntil} (Timedelta: {self.quarantineUntil-datetime.datetime.now()})')
                 self.log_datastore("after refresh")
                 return False
             else:
@@ -99,9 +100,9 @@ class URLSpecificPassDataStore:
                     if newPass.startsInTheFuture():
                         self.passList.append(newPass)
                 self.quarantineUntil = datetime.datetime.now() + datetime.timedelta(days=1)
-                logging.info(f'Quarantine for {f"Visible passes" if "showAll=f" in self.passURL else "Regular passes"}, (url: {self.passURL}) is now active for 24 Hours.')
+                logging.warning(f'Quarantine for {f"Visible passes" if self.visiblePassStore else "Regular passes"}, (url: {self.passURL}) is now active for 24 Hours.')
 
-        #self.log_datastore("after refresh")
+        self.log_datastore("after refresh")
 
         # check to see if the refresh actually got passes in the future.
         if len(self.passList)>0:
