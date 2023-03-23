@@ -16,8 +16,12 @@ class IssDataServer:
         self.UDPSock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.listen_addr = ("", self.incomingPort)
         self.UDPSock.bind(self.listen_addr)
-        logging.basicConfig(filename='ISS.log', level=logging.DEBUG)
-
+        logging.basicConfig(
+            filename='ISS.log',
+            level=logging.DEBUG,
+            format='%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s: %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S'
+        )
         print(f'Started @ {ctime()}')
         logging.info(f'STARTUP:{ctime()}: Started')
 
