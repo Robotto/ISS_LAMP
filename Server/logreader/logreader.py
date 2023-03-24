@@ -23,7 +23,7 @@ table.add_column("MESSAGE", no_wrap = False)  # This column will potentially con
 table.row_styles = ["none", "none", "none", "dim"]  # Every fourth row is "brighter", to give the eye a "guide" when moving leftwards in a crowded table.
 
 # Open and read log file.
-with open("ISS.log", "r") as logfile:
+with open("../ISS.log", "r") as logfile:
 	logfileContent = logfile.read()
 
 # Parse the contents of the log file and populate the table accordingly inculding stylisation according to loglevel.
