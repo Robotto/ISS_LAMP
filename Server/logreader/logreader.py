@@ -30,7 +30,7 @@ with open("../ISS.log", "r") as logfile:
 regex = r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3}) (\w+) (\w+) - (.+)'
 
 for line in logfileContent.split("\n"):
-	match = re.search(regex, line)
+	match = re.search(regex, line.replace("\\x00", " "))
 	if match:
 		match match.group(2):
 			case "DEBUG":
