@@ -121,7 +121,7 @@ class URLSpecificPassDataStore:
         if len(self.passList)>0:
             return True
         else:
-            logging.error(f"{self.passTypeStored}: Empty pass list for {self.passURL}, but refreshing it didn't work...")
+            logging.error(f'REFRESH:{self.passTypeStored}: Empty pass list for {self.passURL}, but refreshing it did not work...')
             return False
 
 
