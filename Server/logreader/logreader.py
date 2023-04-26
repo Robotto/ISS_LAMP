@@ -29,20 +29,30 @@ with open("../ISS.log", "r") as logfile:
 # Parse the contents of the log file and populate the table accordingly inculding stylisation according to loglevel.
 regex = r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3}) (\w+) (\w+) - (.+)'
 
+
 for line in logfileContent.split("\n"):
-	match = re.search(regex, line.replace("\\x00", " "))
+	match = re.search(regex, line.replace("\\x00", '\\'))
+	lineStyle="none"
 	if match:
 		match match.group(2):
 			case "DEBUG":
-				table.add_row(match.group(1), match.group(2), match.group(3), match.group(4), style="green")
+				lineStyle="green"
+#				table.add_row(match.group(1), match.group(2), match.group(3), match.group(4), style="green")
 			case "INFO":
-				table.add_row(match.group(1), match.group(2), match.group(3), match.group(4), style="cyan")
+				if 'TX:' in match.group(4):
+					lineStyle="bold grey100 on grey15"
+				else:
+					lineStyle="cyan1"
 			case "WARNING":
-				table.add_row(match.group(1), match.group(2), match.group(3), match.group(4), style="bright_yellow")
+#				table.add_row(match.group(1), match.group(2), match.group(3), match.group(4), style="bright_yellow")
+				lineStyle="yellow1"
 			case "ERROR":
-				table.add_row(match.group(1), match.group(2), match.group(3), match.group(4), style="red on grey")
+#				table.add_row(match.group(1), match.group(2), match.group(3), match.group(4), style="red on grey23")
+				lineStyle="red on grey23"
 			case "CRITICAL":
-				table.add_row(match.group(1), match.group(2), match.group(3), match.group(4), style="white on red")
+#				table.add_row(match.group(1), match.group(2), match.group(3), match.group(4), style="white on red")
+				lineStyle="white on red"
+		table.add_row(match.group(1), match.group(2), match.group(3), match.group(4), style=lineStyle)
 
 # Use rich.console to send the table as stdout (At least i'm assuming that's why rich.table needs rich.console)
 # For now this also clears the console, as issueing the "clear" command in fish will be "undone" once this is run.

@@ -24,6 +24,10 @@ class IssDataServer:
         )
         print(f'Started @ {ctime()}')
         logging.info(f'STARTUP:{ctime()}: Started')
+        logging.warning('LOGLEVEL:WARNING:TEST')
+        logging.debug("LOGLEVEL:DEBUG:TEST")
+        logging.error("LOGLEVEL:ERROR:TEST")
+        logging.info("LOGLEVEL:TX:Message TEST")
 
         print(f'Ready and waiting for inbound on port: {self.incomingPort}')
         logging.info(f'STARTUP:Listening on port: {self.incomingPort}')
@@ -79,7 +83,6 @@ class IssDataServer:
 
 
                     logging.info(f'TX:{PAYLOAD}'.encode('ASCII'))
-                    logging.info('--------------------------------')
 
                     print(f'TX: {PAYLOAD}')
                     print('--------------------------------')
@@ -94,7 +97,6 @@ class IssDataServer:
 
         #MAGIC NUMBEEEERS!
         if '87.62.101.85' in ipv4:
-            print("Oh hi Mark!")
             return 56.16097,10.20394
 
         response = DbIpCity.get(ipv4, api_key='free')
