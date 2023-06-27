@@ -95,10 +95,6 @@ class IssDataServer:
         # https://pypi.org/project/ip2geotools/
         #usage: IssPassUtil.getLatLonFromIP(ipv4)
 
-        #MAGIC NUMBEEEERS!
-        if '87.62.101.85' in ipv4:
-            return 56.16097,10.20394
-
         response = DbIpCity.get(ipv4, api_key='free')
         return response.latitude,response.longitude
 
