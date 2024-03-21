@@ -6,7 +6,7 @@ Currently undergoing an extensive rewrite and restructuring, and also migrating 
 ![UML roadmap](ISS_LAMP_SERVER.png)
 
 
-My take on the ISS lamp, now based on an ESP8266 (wemos D1 mini). I did a writeup with nice pictures for [the hackaday challenge in 2014](http://hackaday.io/project/2026-iss-lamp-ntp-clock-artpiece)
+My take on the ISS lamp, now based on an ESP8266. I did a writeup with nice pictures for [the hackaday challenge in 2014](http://hackaday.io/project/2026-iss-lamp-ntp-clock-artpiece)
 
 The idea is to have a "stand-alone" unit which only needs power and wifi to work
 
@@ -33,10 +33,8 @@ I will however take full credit for the VFD code, which was written and libraryf
 
 By take credit i mean that i wrote it, and hereby disclaim all ownership of it. feel free to use this code and edit, sell, buy, republish-taking-credit or print-out-and-eat it.
 
-Prerequisites for the server: (Python2 - Deprecated)
-
 ```bash
-mechanize ipinfo ipy dateutil beautifulsoup 
+python3 -m pip install -r Server/requirements.txt
 ```
 
 Happy hacking!
