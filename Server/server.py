@@ -5,6 +5,12 @@ from IPy import IP
 from HeavensAboveDataStore import locationSpecificISSpassStorage
 from ip2geotools.databases.noncommercial import DbIpCity
 
+#A little helper function to get the servers own IP address:
+def getNetworkIp():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    s.connect(('<broadcast>', 0))
+    return s.getsockname()[0]
 
 class IssDataServer:
 
@@ -29,8 +35,8 @@ class IssDataServer:
         logging.error("LOGLEVEL:ERROR:TEST")
         logging.info("LOGLEVEL:TX:Message TEST")
 
-        print(f'Ready and waiting for inbound on port: {self.incomingPort}')
-        logging.info(f'STARTUP:Listening on port: {self.incomingPort}')
+        print(f'Ready and waiting for inbound on {getNetworkIp()}:{self.incomingPort}')
+        logging.info(f'STARTUP:Listening on {getNetworkIp()}:{self.incomingPort}')
 
         self.datastore={}
 
