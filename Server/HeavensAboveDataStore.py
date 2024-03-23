@@ -13,6 +13,7 @@ Stores two instances of the URLspecificPassDataStore; One for visible passes and
 '''
 class locationSpecificISSpassStorage:
 
+
     def __init__(self, lat, lon):
         # not providing heavens-above with a tz gives you the data in utc time.. which is what you want. :)
         self.visiblePassesURL = 'http://heavens-above.com/PassSummary.aspx?showAll=f&satid=25544&lat=%s&lng=%s&alt=12' % (lat, lon)
@@ -51,7 +52,7 @@ class locationSpecificISSpassStorage:
     def isDstAtClientLocation(self):
         return str(int(datetime.datetime.now(tz.gettz(self.timezone)).dst().seconds / 3600))
 
-    # if datastore hasn't been asked for a pass in n days, it's stale and should probably be discarded
+    # if datastore hasn't been asked for a pass in 7 days, it's stale and should probably be discarded
     def isStale(self):
         return datetime.datetime.now() - self.lastCallWasAt > datetime.timedelta(days=7)
 
@@ -61,50 +62,66 @@ URLSpecificPassDataStore - Stores passes from one specific heavens-above url
 Automagically refreshes passes (if needed) when asked for next pass. 
 '''
 class URLSpecificPassDataStore:
+    DEBUG_VERBOSE = True
+
     def __init__(self,url):
         self.quarantineUntil = datetime.datetime.now()
         self.passURL = url
+        self.passTypeStored = 'VISIBLE' if 'showAll=f' in self.passURL else 'REGULAR'
         self.passList = []
-        self.refreshPasses()
+        #self.refreshPasses()
 
     def log_datastore(self,info):
-        logging.debug(f"All passes in store ({info}): {len(self.passList)}")
+        logging.info(f'REFRESH:All passes in URLSpecificPassDataStore for {self.passTypeStored} passes from {self.passURL} {info}: {len(self.passList)}')
+
+        if not self.DEBUG_VERBOSE:
+            return
         for index,isspass in enumerate(self.passList, start=1):
-            logging.debug(f"#{index}: {isspass}")
+            if not isspass.startsInTheFuture():
+                logging.warning(f"#{index}: {isspass}")
+            else:
+                logging.debug(f"#{index}: {isspass}")
 
     def refreshPasses(self):
 
         self.log_datastore("before refresh")
+        listWasModified = False
 
         #remove passes that ended in the past
         if len(self.passList) > 0: #list will be empty on first run.
-            for issPass in self.passList[:]: #iterate through a copy of the list
+
+            for issPass in self.passList[:]: #iterate through a copy of the list, so modifications to the list won't mess with the for loop.
                 if not issPass.startsInTheFuture(): #has this pass already started?
                     logging.info(f'REMOVING old pass: {issPass}')
                     self.passList.remove(issPass)
+                    listWasModified=True
 
-        #Empty list?
+        #first run? Empty list?
         if len(self.passList) < 1:
             if datetime.datetime.now() < self.quarantineUntil: #if pass list is empty, but quarantine is active
-                print(f'WARNING! pass list for url: {self.passURL} is empty, but not enough time has passed since last query!')
-                logging.warning(f'Pass list for {self.passURL} is empty, but quarantine does not end before {self.quarantineUntil} (Timedelta: {self.quarantineUntil-datetime.datetime.now()})')
-                self.log_datastore("after refresh")
+                print(f'Oh no! pass list for url: {self.passURL} ({self.passTypeStored} passes) is empty, but not enough time has passed since last query!')
+                logging.error(f'Pass list for {self.passURL} is empty, but quarantine does not end before {self.quarantineUntil} (Timedelta: {self.quarantineUntil-datetime.datetime.now()})')
+                logging.info(f'REFRESH:{self.passTypeStored}: Halted due to quarantine.')
                 return False
             else:
+                logging.warning(f'EMPTY PASS LIST for url: {self.passURL}. Refreshing!')
                 for row in URLSpecificPassDataStore.get_html_return_rows(self.passURL):
                     newPass = IssPass(row)
                     if newPass.startsInTheFuture():
                         self.passList.append(newPass)
+                        listWasModified=True
                 self.quarantineUntil = datetime.datetime.now() + datetime.timedelta(days=1)
-                logging.info(f'Quarantine for {f"Visible passes" if "showAll=f" in self.passURL else "Regular passes"}, (url: {self.passURL}) is now active for 24 Hours.')
+                logging.warning(f'Quarantine for {self.passTypeStored} PASSES, (url: {self.passURL}) is now active for 24 Hours.')
 
-        self.log_datastore("after refresh")
-
+        if listWasModified:
+            self.log_datastore("after refresh")
+        else:
+            logging.info(f'REFRESH:{self.passTypeStored}: Getting new pass data is not neccesary, we got plenty of data right here!')
         # check to see if the refresh actually got passes in the future.
         if len(self.passList)>0:
             return True
         else:
-            logging.error(f"Pass list for {self.passURL} is empty, but refreshing it didn't work...")
+            logging.error(f'REFRESH:{self.passTypeStored}: Empty pass list for {self.passURL}, but refreshing it did not work...')
             return False
 
 

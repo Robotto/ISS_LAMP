@@ -5,7 +5,12 @@ from IPy import IP
 from HeavensAboveDataStore import locationSpecificISSpassStorage
 from ip2geotools.databases.noncommercial import DbIpCity
 
-
+#A little helper function to get the servers own IP address:
+def getNetworkIp():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    s.connect(('<broadcast>', 0))
+    return s.getsockname()[0]
 
 class IssDataServer:
 
@@ -17,13 +22,21 @@ class IssDataServer:
         self.UDPSock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.listen_addr = ("", self.incomingPort)
         self.UDPSock.bind(self.listen_addr)
-        logging.basicConfig(filename='ISS.log', level=logging.DEBUG)
-
+        logging.basicConfig(
+            filename='ISS.log',
+            level=logging.DEBUG,
+            format='%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s: %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S'
+        )
         print(f'Started @ {ctime()}')
-        logging.info(f'{ctime()}: Started')
+        logging.info(f'STARTUP:{ctime()}: Started')
+        logging.warning('LOGLEVEL:WARNING:TEST')
+        logging.debug("LOGLEVEL:DEBUG:TEST")
+        logging.error("LOGLEVEL:ERROR:TEST")
+        logging.info("LOGLEVEL:TX:Message TEST")
 
-        print(f'Ready and waiting for inbound on port: {self.incomingPort}')
-        logging.info(f'Listening on port: {self.incomingPort}')
+        print(f'Ready and waiting for inbound on {getNetworkIp()}:{self.incomingPort}')
+        logging.info(f'STARTUP:Listening on {getNetworkIp()}:{self.incomingPort}')
 
         self.datastore={}
 
@@ -36,7 +49,7 @@ class IssDataServer:
 
             remoteIP = IP(addr[0]).strNormal()  # convert address of packet origin to string
 
-            logging.info(f'{ctime()}: RX: \"{data.rstrip()}\" from  {remoteIP}')
+            logging.info(f'INCOMING:{ctime()}: RX: \"{data.rstrip()}\" from  {remoteIP}')
 
 
             if (data.rstrip() == b'iss?'):
@@ -73,8 +86,11 @@ class IssDataServer:
                         logging.error(f'something went wrong... nextPass does not exist for {key}...perhaps quarantine?')
 
                     self.UDPSock.sendto(PAYLOAD.encode('ASCII'), (remoteIP, self.remotePort))
-                    logging.info(f'TX: {PAYLOAD}')
-                    print(f' TX: {PAYLOAD}')
+
+
+                    logging.info(f'TX:{PAYLOAD}'.encode('ASCII'))
+
+                    print(f'TX: {PAYLOAD}')
                     print('--------------------------------')
                     print()
 
@@ -85,17 +101,13 @@ class IssDataServer:
         # https://pypi.org/project/ip2geotools/
         #usage: IssPassUtil.getLatLonFromIP(ipv4)
 
-        #MAGIC NUMBEEEERS!
-        if '87.62.101.85' in ipv4:
-            return 56.16097,10.20394
-
         response = DbIpCity.get(ipv4, api_key='free')
         return response.latitude,response.longitude
 
     def prune(self):
         #logging.info(f"Pruning!")
-        for latLonKey in self.datastore.keys(): #Run through all keys in datastore
-            if self.datastore[latLonKey].isStale(): #if the location specific datastore hasn't been used in n days...ss
+        for latLonKey in list(self.datastore.keys())[::]: #Run through all keys in datastore
+            if self.datastore[latLonKey].isStale(): #if the location specific datastore hasn't been used in 7 days...
                 logging.info(f"{latLonKey} localised datastore is stale! Pruning...")
                 self.datastore.pop(latLonKey) #remove from store
         #logging.info(f"Done Pruning!")
