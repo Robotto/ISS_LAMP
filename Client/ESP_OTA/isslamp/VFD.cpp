@@ -82,6 +82,7 @@ void VFD::begin()
 void VFD::sendChar(unsigned char databyte)
 {
   digitalWrite(_A_0,LOW); //set
+  delay(2);
   setDataportAndSend(databyte);
 }
 
@@ -181,6 +182,7 @@ void VFD::cursorMode(byte cursormode)
 void VFD::command(unsigned char commandbyte)
 {
   digitalWrite(_A_0,HIGH);
+  delay(2);
   setDataportAndSend(commandbyte);
 }
 
@@ -196,16 +198,16 @@ void VFD::VFDreset()
 void VFD::setDataportAndSend(unsigned char byte_of_doom)
 {
     digitalWrite(_WR,LOW);
-    delay(1);
+    delay(2);
 
     for (unsigned char i = 0; i < 8; i++)
     {
      digitalWrite(_VFD_data_pins[i], (byte_of_doom >> i) & 0x01);
     }
 
-    delay(1);
+    delay(2);
     digitalWrite(_WR,HIGH);
-    delay(1);
+    delay(2);
 
 }
 

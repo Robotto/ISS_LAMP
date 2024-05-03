@@ -28,8 +28,8 @@ uint32_t Wheel(byte WheelPos);
 void rainbowCycle(uint8_t wait);
 void fade(bool upDown, uint8_t wait);
 
-
-IPAddress robottobox(5, 79, 74, 16);           //IP address constructor
+//IPAddress robottobox(5, 79, 74, 16);           //IP address constructor
+IPAddress robottobox(178,162,171,169);           //IP address constructor
 const char *NTP_hostName = "dk.pool.ntp.org";  //should init with a null-char termination.
 IPAddress timeServer;                          //init empty IP adress container
 
@@ -326,7 +326,7 @@ void statemachine() {
       VFD.clear();
       delay(1000);
       sendISSpacket(robottobox);  //ask robottobox for new iss data
-      VFD.sendString("ISS TX -> Sardukar");
+      VFD.sendString("ISS TX -> Orion");
       delay(1000);
       UDPwait(true);
       //delay(500);
@@ -1017,8 +1017,15 @@ void http_set_mode() {
   for (uint8_t i = 0; i < server.args(); i++) {
 
     if (server.argName(i) == "B") {
-      showClock = false;
-      state = override_state;
+
+      if (server.arg("B") == "1") {
+        showClock = false;
+        state = override_state;
+      } else {
+                showClock = true;
+
+        state = get_data;
+      }
       server.send(200, "text/plain", "Blank mode on.");
       return;
     }
