@@ -56,15 +56,18 @@ class IssDataServer:
 
                     self.prune() #Get rid of old data.
 
-                    lat,lon = IssDataServer.getLatLonFromIP(remoteIP)
-
-                    # Round down to 2 decimals so locations within a 1100ish meter radius can share a datastore.
+                    # I round lat/lon down to 2 decimals so locations within a 1100ish meter radius can share a datastore.
                     # https://en.wikipedia.org/wiki/Decimal_degrees
                     # https://xkcd.com/2170/
-                    try:
-                        key=f"{lat:.2f},{lon:.2f}"
-                    except:
+
+                    if '87.61.100.208' in remoteIP:
                         key="56.16,10.19"
+                    else:
+                        try:
+                            lat,lon = IssDataServer.getLatLonFromIP(remoteIP) #sometimes returns noneType lat/lon
+                            key=f"{lat:.2f},{lon:.2f}"
+                        except:
+                            key="56.16,10.19" #dirty fix with hardcoded location
 
                     print()
                     print(f' RX: "{data.strip()}" @ {ctime()} from {remoteIP}')
