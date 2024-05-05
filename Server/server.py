@@ -60,14 +60,15 @@ class IssDataServer:
                     # https://en.wikipedia.org/wiki/Decimal_degrees
                     # https://xkcd.com/2170/
 
-                    if '87.61.100.208' in remoteIP:
-                        key="56.16,10.19"
-                    else:
+                    lat="56.16"
+                    lon="10.19"
+
+                    if not '87.61.100.208' in remoteIP: #Use hardcoded location for this specific IP
                         try:
                             lat,lon = IssDataServer.getLatLonFromIP(remoteIP) #sometimes returns noneType lat/lon
-                            key=f"{lat:.2f},{lon:.2f}"
                         except:
-                            key="56.16,10.19" #dirty fix with hardcoded location
+                            logging.error(f"GEOIP lookup failed for {remoteIP}. Using fallback lat/lon.")
+                    key=f"{lat:.2f},{lon:.2f}"
 
                     print()
                     print(f' RX: "{data.strip()}" @ {ctime()} from {remoteIP}')
