@@ -60,8 +60,8 @@ class IssDataServer:
                     # https://en.wikipedia.org/wiki/Decimal_degrees
                     # https://xkcd.com/2170/
 
-                    lat="56.16"
-                    lon="10.19"
+                    lat=56.16
+                    lon=10.19
 
                     if not '87.61.100.208' in remoteIP: #Use hardcoded location for this specific IP
                         try:
