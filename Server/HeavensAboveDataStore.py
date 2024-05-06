@@ -74,13 +74,12 @@ class URLSpecificPassDataStore:
     def log_datastore(self,info):
         logging.info(f'REFRESH:All passes in URLSpecificPassDataStore for {self.passTypeStored} passes from {self.passURL} {info}: {len(self.passList)}')
 
-        if not self.DEBUG_VERBOSE:
-            return
         for index,isspass in enumerate(self.passList, start=1):
             if not isspass.startsInTheFuture():
                 logging.warning(f"#{index}: {isspass}")
-            else:
+            elif self.DEBUG_VERBOSE:
                 logging.debug(f"#{index}: {isspass}")
+
 
     def refreshPasses(self):
 
@@ -107,7 +106,7 @@ class URLSpecificPassDataStore:
                 logging.warning(f'EMPTY PASS LIST for url: {self.passURL}. Refreshing!')
                 for row in URLSpecificPassDataStore.get_html_return_rows(self.passURL):
                     newPass = IssPass(row)
-                    if newPass.startsInTheFuture():
+                    if newPass.startsInTheFuture() and newPass.getStartTimedeltaUTC()<datetime.timedelta(days = 3): #Don't store passes that are more than 3 days in the future.
                         self.passList.append(newPass)
                         listWasModified=True
                 self.quarantineUntil = datetime.datetime.now() + datetime.timedelta(days=1)
