@@ -28,10 +28,15 @@ class locationSpecificISSpassStorage:
 
         self.lastCallWasAt = datetime.datetime.now()
 
+    def getSize(self):
+        return self.regularPasses.getSize() + self.visiblePasses.getSize()
+
     def getNextPass(self):
         self.lastCallWasAt = datetime.datetime.now()
         nextVisible = self.visiblePasses.getNextPass()
         nextRegular = self.regularPasses.getNextPass()
+
+
 
         if nextVisible is not False and nextRegular is not False:
             if nextVisible == nextRegular: #maybe it's the same pass?, then prefer the visible one!
@@ -80,6 +85,8 @@ class URLSpecificPassDataStore:
             elif self.DEBUG_VERBOSE:
                 logging.debug(f"#{index}: {isspass}")
 
+    def getSize(self):
+        return len(self.passList)
 
     def refreshPasses(self):
 
@@ -122,9 +129,6 @@ class URLSpecificPassDataStore:
         else:
             logging.error(f'REFRESH:{self.passTypeStored}: Empty pass list for {self.passURL}, but refreshing it did not work...')
             return False
-
-
-
 
 
     def getNextPass(self):

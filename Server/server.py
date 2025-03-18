@@ -72,12 +72,14 @@ class IssDataServer:
 
                     print()
                     print(f' RX: "{data.strip()}" @ {ctime()} from {remoteIP}')
-                    print(f' Coordinates: {lat},{lon}, key={key}')
+                    print(f' Coordinates: {lat},{lon}')
 
                     if not key in self.datastore:
                         print(f"Client location ({key}) not in datastore.. retreiving...")
                         self.datastore[key] = locationSpecificISSpassStorage(lat,lon)
                         print(f"Done! datastore now contains: {self.datastore.keys()}")
+                    else:
+                        print(f"Datastore for {key} contains {self.datastore[key].regularPasses.getSize()} passes, {self.datastore[key].visiblePasses.getSize()} of which are visible.")
 
                     #Get next pass from the datastore for client location (key):
                     nextPass = self.datastore[key].getNextPass()
