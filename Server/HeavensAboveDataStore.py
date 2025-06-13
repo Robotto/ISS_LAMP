@@ -4,6 +4,8 @@ from dateutil import tz
 from timezonefinder import TimezoneFinder
 import mechanize
 from bs4 import BeautifulSoup
+
+
 from issPassClass import IssPass
 
 
@@ -111,7 +113,10 @@ class URLSpecificPassDataStore:
                 return False
             else:
                 logging.warning(f'EMPTY PASS LIST for url: {self.passURL}. Refreshing!')
-                for row in URLSpecificPassDataStore.get_html_return_rows(self.passURL):
+                freshRows = URLSpecificPassDataStore.get_html_return_rows(self.passURL)
+                if not freshRows: #If we don't get what we want from the url...
+                    return False
+                for row in freshRows:
                     newPass = IssPass(row)
                     if newPass.startsInTheFuture() and newPass.getStartTimedeltaUTC()<datetime.timedelta(days = 3): #Don't store passes that are more than 3 days in the future.
                         self.passList.append(newPass)
@@ -145,8 +150,12 @@ class URLSpecificPassDataStore:
         br.set_handle_robots(False)
         # Get the ISS PASSES pages:
         print(f'Retrieving list of passes from {url}')
-        html = br.open(url).read()
-
+        response = br.open(url)
+        if response.getcode() != 200:
+            print(f'Error fetching {url}! - Response code: {response.getcode()}')
+            logging.error(f'Error fetching {url}! - Response code: {response.getcode()}')
+            return False
+        html = response.read()
         soup = BeautifulSoup(html.decode('UTF-8'), features="html5lib")
         rows = soup.findAll('tr', {"class": "clickableRow"})
         # print(f"{len(rows)} rows in rows: {rows}")
