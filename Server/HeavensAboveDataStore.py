@@ -150,7 +150,12 @@ class URLSpecificPassDataStore:
         br.set_handle_robots(False)
         # Get the ISS PASSES pages:
         print(f'Retrieving list of passes from {url}')
-        response = br.open(url)
+        try:
+            response = br.open(url)
+        except Exception as e:
+            print(f'Failed to connect to heavens-above (url: {url}) got this exception: {e}')
+            logging.error(f'Failed to connect to heavens-above (url: {url}) got this exception: {e}')
+            return False
         if response.getcode() != 200:
             print(f'Error fetching {url}! - Response code: {response.getcode()}')
             logging.error(f'Error fetching {url}! - Response code: {response.getcode()}')
