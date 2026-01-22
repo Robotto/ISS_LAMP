@@ -64,7 +64,7 @@ class IssDataServer:
                     lat=56.16
                     lon=10.19
 
-                    if not '87.61.100.208' in remoteIP: #Use hardcoded location for this specific IP
+                    if not '91.229.203.86' in remoteIP: #Use hardcoded location for this specific IP
                         try:
                             lat,lon = IssDataServer.getLatLonFromIP(remoteIP) #sometimes returns noneType lat/lon
                         except:
